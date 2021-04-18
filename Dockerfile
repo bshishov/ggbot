@@ -1,10 +1,12 @@
-FROM python:3.9.4-alpine
+FROM python:3.9.4-buster
 
 MAINTAINER Boris Shishov <borisshishov@gmail.com>
 
 WORKDIR /app
 
 ADD . /app
+
+ENV PYTHONPATH=/app/src
 
 RUN python -m pip install --trusted-host pypi.python.org -r requirements.txt
 

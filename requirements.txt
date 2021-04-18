@@ -6,3 +6,4 @@ PyStemmer==2.0.1
 pickledb==0.9.2
 tokema==0.0.2
 gspread==3.7
+toml==0.10.2

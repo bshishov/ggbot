@@ -6,6 +6,7 @@ README.md
 .gsc_service_account.json
 .gitignore
 .git
+*.db
 
 .fi
 ### Python template
