@@ -1,0 +1,88 @@
+intent-ask-name:
+  - <q-how> тебя зовут ?
+  - <q-which> у тебя имя ?
+
+intent-ask-capabilities:
+  - <q-what> ты умеешь ?
+  - <q-what> ты можешь ?
+  - <q-which> команды
+  - <q-which> команды ты знаешь
+
+intent-dialog-test:
+  - как дела ?
+  - тест диалога
+
+intent-debug:
+  - тест
+  - тестирую
+  - отладка
+  - дебаг
+  #- <intent-dota-pick-against>
+  #- <intent-dota>
+
+intent-hello:
+  - привет
+  - дороу
+  - даров
+  - здарова
+  - здорово
+  - йо
+  - хай
+  - добрый вечер
+  - доброе утро
+  - доброй ночи
+
+
+intent-what-do-you-think:
+  - как думаешь
+  - имеет ли смысл
+  - что думаешь
+  - как считаешь
+
+intent-gather-test:
+  - собери всех
+
+mood-positive:
+  - здорово
+  - классно
+  - охуенно
+  - збс
+  - заебись
+  - четко
+  - хорошо
+  - отлично
+  - найс
+  - классно
+  - класс
+
+mood-neutral:
+  - норм
+  - ок
+  - нормально
+  - пойдет
+  - средне
+
+mood-negative:
+  - отстой
+  - паршиво
+  - плохо
+  - неоч
+  - бывало и лучше
+  - так себе
+  - ужасно
+  - хуево
+
+mood-mod:
+  - <mood-positive>: {mod: "positive"}
+  - <mood-neutral>: {mod: "neutral"}
+  - <mood-negative>: {mod: "negative"}
+
+smalltalk-how-are-you-answer:
+  - <mood-mod>: { mod: "{{ args[0].mod }}" }
+  - у меня дела <mood-mod>: { mod: "{{ args[0].mod }}" }
+  - у меня все {mod}
+  - у меня дела {mod}
+  - "{mod}"
+
+smalltalk-how-are-you-negative-reason:
+  - "{reason}"

@@ -1,0 +1,55 @@
+mismatch:
+  actions:
+    - add-reaction-to-request-message: '⁉️'
+
+no-handler:
+  actions:
+    - answer: "{{ message.author.mention }}, нет интента \"{{ match.intent }}\" в конфигах"
+    - add-reaction-to-request-message: '⁉️'
+
+hello:
+  actions:
+    - random:
+      - answer: "{{ message.author.mention }}, привет"
+      - answer: "{{ message.author.mention }}, дороу"
+      - answer: "{{ message.author.mention }}, как сам?"
+    #- add-reaction-to-request-message: '🔥'
+    #- add-reaction-to-answer-message: '🔥'
+
+ask-capabilites:
+  actions:
+    - answer: >
+        Ну я так то пока не особо много че умею...
+        Пока просто учусь отвечать
+
+intent-dialog-test:
+  actions:
+    - answer: "У меня - норм, сам как?"
+    - expect-intents: [smalltalk-how-are-you-answer]
+
+smalltalk-how-are-you-answer:
+  actions:
+    - conditional:
+        condition: "{{ match.slots.mod == 'positive' }}"
+        action: {answer: "найс"}
+    - conditional:
+        condition: "{{ match.slots.mod == 'neutral' }}"
+        action: { answer: "ясно" }
+    - conditional:
+        condition: "{{ match.slots.mod == 'negative' }}"
+        action:
+          - answer: "а че так?"
+          - expect-intents:
+            - stop
+            - smalltalk-how-are-you-negative-reason
+
+smalltalk-how-are-you-negative-reason:
+  actions:
+    - answer: "ясн"
+
+stop:
+  actions:
+    - random:
+      - answer: "ок"
+      - answer: "как скажешь"
+      - answer: "ок, больше не буду"

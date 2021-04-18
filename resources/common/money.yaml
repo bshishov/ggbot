@@ -1,0 +1,20 @@
+currency:
+  - рубль: {uri: RUR}
+  - рублей: {uri: RUR}
+  - деревянных: {uri: RUR}
+  - долларов: {uri: USD}
+  - зеленых: {uri: USD}
+  - баксов: {uri: USD}
+  - евро: {uri: EUR}
+  - фунтов: {uri: GBP}
+  - фунтов стерлинга: {uri: GBP}
+
+currency_dim:
+  - копеек: {currency: RUR}
+  - центов: {currency: [USD, EUR]}
+
+money:
+  - <number> <currency>
+  - <number> <currency> <number> <currency_dim>
+  - <number> <currency_dim>
+  - <number>

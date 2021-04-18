@@ -1,0 +1,71 @@
+intent-search-game:
+  actions:
+    #- answer: "``` {{ match.slots }} ```"
+    - igdb-query:
+        endpoint: games
+        query: |-
+          search "{{ match.slots.game.match }}";
+          fields name,url,status,first_release_date,cover.url,aggregated_rating,summary,genres.name,multiplayer_modes.*,websites.*,videos.*;
+          where version_parent = null;
+          limit 1;
+        #where category = 0 & status = 0 & version_parent = null;
+        success:
+          - igdb-game-embed-results: {}
+          # - send-embed:
+          #   title: "{{ results[0].name }}"
+          #   url: "{{ results[0].url }}"
+          #   thumbnail: "{{ results[0].cover.url }}"
+          #   #footer: "{{ results[0].summary }}"
+          #   fields:
+          #     Рейтинг: "{{ results[0].rating|int }}"
+          #     Мультиплеер: >
+          #       {% if results[0].multiplayer_modes is defined %}
+          #       {% for mode in results[0].multiplayer_modes %}
+          #       {% if mode.onlinecoop -%}
+          #         co-op
+          #         {%- if mode.onlinecoopmax %} на {{ mode.onlinecoopmax }} игроков{% endif %}
+          #       {% endif %}
+          #       {% if mode.campaigncoop %} +кампания{% endif -%}
+          #       {% endfor %}
+          #       {% endif %}
+          #     Жанр: >
+          #       {% if results[0].genres is defined %}
+          #       {% for genre in results[0].genres %}
+          #       {{ genre.name }}
+          #       {% endfor %}
+          #       {% endif %}
+        fail:
+          answer: "К сожалению мне ничего не удалось найти("
+
+intent-search-coop:
+  actions:
+    - answer: "Slots: ```dt={{ match.slots.dt }} r={{ match.slots.r }} players={{ match.slots.players }}```"
+    - igdb-query:
+        endpoint: games
+        query: |-
+          fields name,url,status,first_release_date,cover.url,aggregated_rating,summary,genres.name,multiplayer_modes.*,websites.*,videos.*;
+          where first_release_date > {{ (time() - match.slots.dt) | int }} & platforms = (6) & aggregated_rating > {{ match.slots.r }} & version_parent = null & multiplayer_modes.onlinecoopmax >= {{ match.slots.players }};
+          sort aggregated_rating desc;
+          limit 50;
+        success:
+          - igdb-game-embed-results:
+              limit: 50
+              randomize: true
+        fail:
+          answer: "К сожалению мне ничего не удалось найти("
+
+intent-search-game-test:
+  actions:
+    - answer: "Slots: ```{{ match.slots }}```"
+
+
+intent-debug-genres:
+  actions:
+  - answer: "{{ match.slots.genres.ids }}"
+ #- igdb-query:
+ #    endpoint: genres
+ #    query: |-
+ #      fields id, name, slug;
+ #      limit 100;
+ #    success:
+ #      answer: "```{{ results }}```"

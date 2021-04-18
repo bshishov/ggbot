@@ -1,0 +1,116 @@
+month:
+  - январь: { number: 1, uri: 'jan' }
+  - февраль: { number: 2, uri: 'feb' }
+  - март: { number: 3, uri: 'mar' }
+  - апрель: { number: 4, uri: 'apr' }
+  - май: { number: 5, uri: 'may' }
+  - июнь: { number: 6, uri: 'jun' }
+  - июль: { number: 7, uri: 'jul' }
+  - август: { number: 8, uri: 'aug' }
+  - сентябрь: { number: 9, uri: 'sep' }
+  - октябрь: { number: 10, uri: 'oct' }
+  - ноябрь: { number: 11, uri: 'nov' }
+  - декабрь: { number: 12, uri: 'dec' }
+
+n-winter:
+  - зима
+  - зимушка
+
+n-spring:
+  - весна
+
+n-summer:
+  - лето
+
+n-autumn:
+  - осень
+
+season:
+  - <n-winter>: {uri: winter, start: {d: 1, m: 12}, end: {d: 31, m:  2}}
+  - <n-spring>: {uri: spring, start: {d: 1, m:  3}, end: {d: 31, m:  5}}
+  - <n-summer>: {uri: summer, start: {d: 1, m:  6}, end: {d: 31, m:  8}}
+  - <n-autumn>: {uri: autumn, start: {d: 1, m:  9}, end: {d: 31, m: 11}}
+
+special_intervals:
+  - рождество: {uri: xmas, start: {d: 25, m:  12}, end: {d: 10, m: 1}}
+
+year:
+  - <positive-integer> год
+
+date-now:
+  - настоящее время: { value: 'now' }
+  - сегодня: { value: 'now' }
+  - сейчас: { value: 'now' }
+
+date-point:
+  - <date-now>: { value: 'now' }
+  - <positive-integer> год: {value: '{{ args[0].value }}/y'}
+  - <month>: {value: '{{ args[0].number }}/m'}
+
+date-interval:
+  - последний день: {start: '-1/d', end: 'now'}
+  - сегодня: {start: '-1/d', end: 'now'}
+  - последний месяц: {start: '-1/m', end: 'now'}
+  - последний год: {start: '-1/y', end: 'now'}
+  - <positive-integer> года: {start: '-{{ args[0].value }}/y', end: 'now'}
+  - <positive-integer> месяца: {start: '-{{ args[0].value }}/m', end: 'now'}
+  - <positive-integer> дня: {start: '-{{ args[0].value }}/d', end: 'now'}
+  - <month> <positive-integer> года: {start: '{{ args[0].number }}/m {{ args[1].value }}/y,', end: 'now'}
+
+# """
+# date-timestamp
+# ===
+#
+# относительные
+#   вчера
+#   сегодня
+#   завтра
+#   X=1 день/месяц/год/... назад
+#   через X=1 день/месяц/год/...
+#
+# абсолютные
+#
+#
+# Период времени
+# ===
+# за сегодня
+# за вчера
+# за последнюю неделю
+#
+# за прошлый/предыдущий дней/недель/месяцов/квартал/годов/столетий/десятилетей/тысячелетий
+#
+# за след/будущих дней/недель/месяцов/квартал/годов/столетий/десятилетей/тысячелетий
+# за Х (последних?) дней/недель/месяцов/квартал/годов/столетий/десятилетей/тысячелетий
+#
+# в прошлый пн/вт/ср/чт/пт/сб/вс
+#
+# прошлой зимой/летом/весной/осень
+# зимой/летом/весной/осень
+# зимой/летом/весной/осень того года
+#
+# Х года назад зимой
+#
+#
+# c <date-timestamp> по <date-timestamp>
+#
+# c марта того года
+# с конца декабря того года   (-7 -10 дней от конца месяца)
+# с конца года   (-1 месяц от конца года)
+# до конца года  (до 31 дек)
+# """
+
+n-minutes:
+  - мин
+  - минут
+  - минуты
+
+n-hours:
+  - часов
+  - часа
+  - ч
+
+time-duration:
+  - <positive-integer> <n-minutes>
+  - <positive-integer> <n-hours>
+  - <positive-integer> <n-hours> <positive-integer> <n-minutes>
+  - <positive-integer> <n-hours> и <positive-integer> <n-minutes>

@@ -1,0 +1,109 @@
+platform:
+  - пк: {platform: 6}
+  - pc: {platform: 6}
+  - плойка: {platform: 48}
+  - пс4: {platform: 48}
+
+find-v:
+  - найди
+  - поищи
+  - загугли
+  #- <please> <find-v>
+  #- <find-v> <please>
+  - какие есть
+  - какие бывают
+
+coop-adj:
+  - кооперативные
+  - коопные
+  - на несколько игроков
+  - coop
+  - кооп
+  - coop
+  - cooperative
+
+which:
+  - которые
+  - такие как
+
+game-noun:
+  - игры
+  - игра
+  - игрули
+  - game
+
+players:
+  - игроков
+  - человек
+
+period_mod:
+  - новые: {dt: "{{ 60 * 60 * 24 * 365 }}"}
+  - старые: {dt: "{{ 60 * 60 * 24 * 365 * 10 }}"}
+  - за последний год: {dt: "{{ 60 * 60 * 24 * 365 }}"}
+  - за последний месяц: {dt: "{{ 60 * 60 * 24 * 31 }}"}
+  - за последние <number> месяцев: {dt: "{{ 60 * 60 * 24 * 31 * args[2].value }}"}
+  - за последние <number> лет: {dt: "{{ 60 * 60 * 24 * 365 * args[2].value }}"}
+
+rating-high:
+  - с высоким рейтингом
+  - топовые
+
+rating-noun:
+  - рейтинг
+  - оценка
+  - отзывы
+
+higher:
+  - выше
+  - не ниже
+  - более чем
+  - более
+  - больше чем
+  - больше
+
+rating_mod:
+  - <rating-high>: {r: 75}
+  - с <rating-noun> <higher> <number>: {r: "{{ number.value }}"}
+
+genre_mod:
+  - <genres>: {genres: "{{ args[0].ids }}"}
+  - в жанре <genres>: {genres: "{{ args[2].ids }}"}
+
+randomize_mod:
+  - на рандом: {randomize: true}
+  - любые: {randomize: true}
+  - какие-то: {randomize: true}
+
+mods:
+  - <genre_mod> <rating_mod> <period_mod>
+
+search:
+  - <find-v> <coop-adj> <game-noun>: {players: 4}
+  - <find-v> <game-noun> <which> <coop-adj>: {players: 4}
+  - <find-v> <coop-adj> <game-noun>: {players: 4}
+  - <find-v> <game-noun> <which> <coop-adj>: {players: 4}
+  - <find-v> <game-noun> <coop-adj>: {players: 4}
+  - <find-v> <game-noun> на <number> <players>: {players: "{{ args[3].value }}"}
+  - <game-noun> на <number> <players>: {players: "{{ args[2].value }}"}
+  - <game-noun> на <number>: {players: "{{ args[2].value }}"}
+  - <coop-adj> <game-noun> на <number>: {players: "{{ args[3].value }}"}
+
+intent-search-coop:
+  - <search>: {players: "{{ args[0].players }}", dt: "{{ 60 * 60 * 24 * 365 }}", r: 60}
+  - <search> <rating_mod>: {players: "{{ args[0].players }}", dt: "{{ 60 * 60 * 24 * 365 }}", r: "{{ args[1].r }}"}
+  - <search> <period_mod>: {players: "{{ args[0].players }}", dt: "{{ args[1].dt }}", r: 60}
+  - <search> <period_mod> <rating_mod>: {players: "{{ args[0].players }}", dt: "{{ args[1].dt }}", r: "{{ args[2].r }}"}
+  - <search> <genre_mod>: {players: "{{ args[0].players }}"}
+
+intent-search-game:
+  - <find-v> {game}
+  - <find-v> {game}
+  - <please> <find-v> {game}
+
+intent-search-game-test:
+  - число <number>
+  - <find-v> игры за <date-interval>
+
+intent-debug-genres:
+  - жанры
+  - <genres>

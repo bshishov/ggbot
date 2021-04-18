@@ -1,0 +1,156 @@
+dota-v-pick-hero:
+  - взять
+  - пикнуть
+  - выбрать
+  - поставить
+
+dota-v-pick-item:
+  - взять
+  - собрать
+  - купить
+
+dota-v-will-match:
+  - зайдет
+  - подойдет
+  - заедет
+  - выстоит
+
+dota-v-counters:
+  - контрит
+  - унижает
+  - <dota-v-will-match> против
+
+dota-n-hero:
+  - герой
+  - чар
+  - перс
+  - чемпион
+
+dota-n-item:
+  - предмет
+  - артефакт
+  - арт
+  - айтем
+
+dota-lane:
+  - мид: {lane: midlane}
+  - центр: {lane: midlane}
+  - центральный коридор: {lane: midlane}
+  - изи: {lane: safelane}
+  - легкая: {lane: safelane}
+  - изи лейн: {lane: safelane}
+  - легкая линия: {lane: safelane}
+  - сложная: {lane: offlane}
+  - сложная линия: {lane: offlane}
+  - харда: {lane: offlane}
+  - хардлейн: {lane: offlane}
+  - оффлейн: {lane: offlane}
+  - лес : {lane: jungle}
+
+dota-on-lane:
+  - в <dota-lane>: {lane: "{{ args[1].lane }}"}
+  - на <dota-lane>: {lane: "{{ args[1].lane }}"}
+
+dota-role:
+  - саппорт: {pos: [4,5]}
+  - фулл саппорт: {pos: 5}
+  - сап: {pos: 5}
+  - кери: {pos: 1}
+  - керри: {pos: 1}
+  - мидер: {pos: 2}
+  - оффлейнер: {pos: 3}
+  - танк: {pos: [1,2,3], role: tank}
+  - хил: {pos: [4,5], role: healer}
+  - дд: {pos: [1,2], role: damage}
+  - дамагер: {pos: [1,2], role: damage}
+  - ддшник: {pos: [1,2], role: damage}
+  - физушник: {pos: [1,2], role: damage, damage_type: physical}
+  - маг: {pos: [1,2], role: damage, damage_type: magical}
+  - нюкер: {pos: [1,2], role: nuke}
+  - пятерка: {pos: [5]}
+  - четверка: {pos: [4]}
+  - тройка: {pos: [3]}
+
+dota-item:
+  - радик: {item: radiance}
+
+intent-dota-pick-against:
+  #- <q-which> <dota-role> <dota-v-pick-hero> <dota-on-lane> против <dota-hero>
+  #- <q-which> <dota-role> <dota-v-pick-hero> против <dota-hero> <dota-on-lane>
+  #- <q-whom> <dota-v-pick-hero> против <dota-hero> <dota-on-lane>
+  #- <q-which> <dota-n-hero> <dota-v-will-match> <dota-on-lane> против <dota-hero>
+  #- <q-who> <dota-v-will-match> против <dota-hero> <dota-on-lane>
+  - <q-whom> <dota-v-pick-hero> <dota-on-lane> против <dota-hero>: {hero_id: "{{ args[4].id }}"}
+  - <q-which> <dota-n-hero> <dota-v-will-match> против <dota-hero>: {hero_id: "{{ args[4].id }}"}
+  - <q-who> <dota-v-will-match> против <dota-hero>: {hero_id: "{{ args[3].id }}"}
+  - <q-which> <dota-n-hero> <dota-v-will-match> против <dota-hero>: {hero_id: "{{ args[4].id }}"}
+  - <q-who> <dota-v-counters> <dota-hero>: {hero_id: "{{ args[2].id }}"}
+  - <q-whom> <dota-v-pick-hero> против <dota-hero>: {hero_id: "{{ args[3].id }}"}
+  - кем контрить <dota-hero>: {hero_id: "{{ args[2].id }}"}
+
+intent-dota: []
+
+give-v:
+  - дай
+  - скинь
+  - скажи
+  - кинь
+
+dotabuff:
+  - dotabuff
+  - дотабафф
+  - дотабаф
+  - дб
+
+intent-find-hero-for-mmr:
+  - кто заходит на <dota-lane> до <number> ммр
+
+intent-dotabuff:
+  - <dotabuff>
+  - мой <dotabuff>
+  - <give-v> <dotabuff>
+  - <give-v> <link> на <dotabuff>
+  - <give-v> <link> на мой <dotabuff>
+  - <give-v> <link> на <dotabuff> <please>
+  - <give-v> <link> на мой <dotabuff> <please>
+
+dotabuff-id-answer:
+  - "мой id {int}": {id: "{{ args[2].value }}"}
+  - "{int}": {id: "{{ args[0].value }}"}
+
+dota-last:
+  - последняя
+  - ласт
+
+dota-match:
+  - катка
+  - матч
+  - игра
+  - кателла
+
+dota-rating:
+  - ммр
+  - рейтинг
+  - mmr
+
+intent-my-last-match:
+  - <dota-last> <dota-match>
+  - моя <dota-last> <dota-match>
+  - как я сыграл в <dota-last> <dota-match>
+  - как я сыграл
+  - че как
+  - чё как
+  - чо как
+  - лм
+
+intent-my-mmr:
+  - <q-which> у меня <dota-rating>
+  - мой <dota-rating>
+  - <dota-rating>
+
+intent-my-best-heroes:
+  - на ком я лучше всего играю
+  - мои лучшие герои
+  - на каких героях я играю
+  - лучшие герои
+  - топ герои

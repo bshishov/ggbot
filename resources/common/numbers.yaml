@@ -1,0 +1,103 @@
+number-text:   # ruleset   - массив правил
+  - ноль: { value: 0 }   # 1 правило из 1 text token    Rule(tokens=[TextToken('ноль')])
+  - одну: { value: 1 }
+  - один: { value: 1 }
+  - одна: { value: 1 }
+  - две: { value: 2 }
+  - два: { value: 2 }
+  - три: { value: 3 }
+  - четыре: { value: 4 }
+  - пять: { value: 5 }
+  - пяток: { value: 5 }
+  - шесть: { value: 6 }
+  - семь: { value: 7 }
+  - восемь: { value: 8 }
+  - девять: { value: 9 }
+  - десять: { value: 10 }
+
+  - одиннадцать: { value: 11 }
+  - одинадцать: { value: 11 }
+  - двенадцать: { value: 12 }
+  - тринадцать: { value: 13 }
+  - четырнадцать: { value: 14 }
+  - пятнадцать: { value: 15 }
+  - шестнадцать: { value: 16 }
+  - семнадцать: { value: 17 }
+  - восемнадцать: { value: 18 }
+  - девятнадцать: { value: 19 }
+
+  - двадцать: { value: 20 }
+  - тридцать: { value: 30 }
+  - сорок: { value: 40 }
+  - пятьдесят: { value: 50 }
+  - шестьдесят: { value: 60 }
+  - семьдесят: { value: 70 }
+  - восемьдесят: { value: 80 }
+  - девяноста: { value: 90 }
+
+  - сто: { value: 100 }
+  - двести: { value: 200 }
+  - триста: { value: 300 }
+  - четыреста: { value: 400 }
+  - пятьсот: { value: 500 }
+  - шестьсот: { value: 600 }
+  - семьсот: { value: 700 }
+  - восемьсот: { value: 800 }
+  - девятьсот: { value: 900 }
+
+  - тысяча: {value: 1000}
+  - тыс: {value: 1000}
+  - миллион: {value: 1000000}
+  - млн: {value: 1000000}
+  - миллиард: {value: 1000000000}
+  - млрд: {value: 1000000000}
+
+  - полтора: { value: 1.5 }
+
+  # для кабанчиков
+  - чирик: { value: 10 }
+  - червонец: { value: 10 }
+  - полтос: { value: 50 }
+  - полтина: { value: 50 }
+  - полтинник: { value: 50 }
+  - сотка: { value: 100 }
+  - сотен: { value: 100 }
+  - сотэн: { value: 100 }
+  - центнер: { value: 100 }
+  - тыща: { value: 1000 }
+  - косарь: { value: 1000 }
+  - кусок: { value: 1000 }
+  - кес: { value: 1000 }
+  # - штука: { value: 1000 }  # TODO: special case?
+  - тонна: { value: 1000 }
+  - лям: { value: 1000000 }
+  - лимон: { value: 1000000 }
+  - лярд: { value: 1000000000 }
+
+number-mod-half:
+  - половина
+  - полу
+  - пол
+
+number-composite:  # ruleset
+  - <number-text>: {value: '{{ args[0].value }}'}
+  - <number-composite> <number-text>: {value: '{{ args[0].value + args[1].value }}'}
+
+number-k:
+   - "{float} k": { value: "{{ args[0].value * 1000 }}" }
+   - "{float} к": { value: "{{ args[0].value * 1000 }}" }
+
+number-kk:
+   - "{float} kk": { value: "{{ args[0].value * 1000 * 1000 }}" }
+   - "{float} кк": { value: "{{ args[0].value * 1000 * 1000 }}" }
+
+number:
+  - "{int}": { value: "{{ args[0].meta }}" }
+  - "{float}": { value: "{{ args[0].meta }}" }
+  - <number-k>: { value: '{{ args[0].value }}' }
+  - <number-kk>: { value: '{{ args[0].value }}' }
+  - <number-composite>: { value: '{{ args[0].value }}' }
+  - <number-mod-half> <number-composite>: {value: '{{ 0.5 * args[1].value }}'}
+
+positive-integer:
+  - <number>

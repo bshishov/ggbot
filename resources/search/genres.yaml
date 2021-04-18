@@ -1,0 +1,142 @@
+genre-fighting:
+  - драчки
+  - файтинг
+  - fighting
+  - махач
+
+genre-shooter:
+  - шутер
+  - шутан
+  - стрелялка
+  - fps
+  - фпс
+
+genre-music:
+  - музыкальная
+  - ритм
+  - music
+
+genre-platform:
+  - платформер
+
+genre-puzzle:
+  - головоломка
+  - паззл
+  - на подумать
+  - с загадками
+
+genre-racing:
+  - гонки
+  - гоночки
+  - гонялки
+  - тачки
+  - машинки
+
+genre-rts:
+  - rts
+  - ртс
+  - <genre-strategy> в реальном времени
+
+genre-rpg:
+  - рпг
+  - ролевка
+  - ролевая
+  - ролевая игра
+
+genre-simulator:
+  - симулятор
+  - сим
+
+genre-sport:
+  - спорт
+  - спортивная
+
+genre-strategy:
+  - стратегия
+  - стратежка
+
+genre-tbs:
+  - тбс
+  - пошаговая
+  - пошаговая <genre-strategy>
+
+genre-tactical:
+  - тактика
+  - тактический
+
+genre-quiz:
+  - квиз
+  - викторина
+  - вопросы
+
+genre-beat-em-up:
+  - битемап
+
+genre-pinball:
+  - пинбол
+  - pinball
+
+genre-adventure:
+  - приключения
+  - адвенчура
+  - бродилка
+
+genre-arcade:
+  - аркада
+  - аркадный
+
+genre-visual-novel:
+  - новелла
+  - новела
+  - визуальная новелла
+
+genre-indie:
+  - инди
+  - незавизимая
+  - индюшка
+
+genre-card-board-game:
+  - карточная
+  - настольная
+  - настолка
+  - картонки
+  - кки
+  - карты
+  - картишки
+
+genre-moba:
+  - моба
+  - типа доты
+  - типа лол
+
+genre-point-and-click:
+  - квесты
+
+genre:
+  - <genre-fighting>: {id: 4}
+  - <genre-shooter>: {id: 5}
+  - <genre-music>: {id: 7}
+  - <genre-platform>: {id: 8}
+  - <genre-puzzle>: {id: 9}
+  - <genre-racing>: {id: 10}
+  - <genre-rts>: {id: 11}
+  - <genre-rpg>: {id: 12}
+  - <genre-simulator>: {id: 13}
+  - <genre-sport>: {id: 14}
+  - <genre-strategy>: {id: 15}
+  - <genre-tbs>: {id: 16}
+  - <genre-tactical>: {id: 24}
+  - <genre-quiz>: {id: 26}
+  - <genre-beat-em-up>: {id: 25}
+  - <genre-pinball>: {id: 30}
+  - <genre-adventure>: {id: 31}
+  - <genre-arcade>: {id: 33}
+  - <genre-visual-novel>: {id: 34}
+  - <genre-indie>: {id: 32}
+  - <genre-card-board-game>: {id: 35}
+  - <genre-moba>: {id: 36}
+  - <genre-point-and-click>: {id: 2}
+
+genres:
+  - <genre>: {ids: "[{{ args[0].id }}]"}
+  - <genres> <genre>: { ids: "{{ args[0].ids + [ args[1].id ] }}" }
