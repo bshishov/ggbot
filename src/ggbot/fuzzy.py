@@ -1,6 +1,5 @@
 from typing import Optional, Union, Tuple
-
-import numpy as np
+import math
 
 __all__ = [
     'FuzzySet',
@@ -26,8 +25,17 @@ __all__ = [
     'Not',
     'Rules',
     'R',
-    'plot_variable'
+    'plot_variable',
+    'iter_linear_space'
 ]
+
+
+def iter_linear_space(x_min: float, x_max: float, steps: int):
+    dx = (x_max - x_min) / (steps - 1.0)
+    x = x_min
+    for i in range(steps):
+        yield x
+        x += dx
 
 
 class FuzzySet:
@@ -37,7 +45,8 @@ class FuzzySet:
     def calculate_centroid(self, x_min=0.0, x_max=1.0, steps=100):
         s1 = 0.0
         area = 0.0
-        for x in np.linspace(x_min, x_max, steps):
+
+        for x in iter_linear_space(x_min, x_max, steps):
             sample = self.sample(x)
             s1 += x * sample
             area += sample
@@ -48,14 +57,9 @@ class FuzzySet:
 
     def center(self):
         return None
-        #raise NotImplementedError
 
     def to_discrete(self, x_min=0.0, x_max=1.0, steps=100):
-        values = np.zeros(steps, np.float32)
-        i = 0
-        for x in np.linspace(x_min, x_max, steps):
-            values[i] = self.sample(x)
-            i += 1
+        values = list(map(self.sample, iter_linear_space(x_min, x_max, steps)))
         return DiscreteFuzzySet(values, (x_min, x_max))
 
     def __call__(self, x):
@@ -67,12 +71,29 @@ class FuzzySet:
 
 class DiscreteFuzzySet(FuzzySet):
     def __init__(self, values, bounds):
-        self._values = np.asarray(values)
-        x_min, x_max = bounds
-        self._x = np.linspace(x_min, x_max, len(values))
+        self._values = values
+        self._x_min, self._x_max = bounds
+        self._x_range = self._x_max - self._x_min
 
     def sample(self, x):
-        return np.interp(x, self._x, self._values)
+        n = len(self._values)
+        k = (x - self._x_min) / self._x_range
+        i = k * (n - 1)  # float index
+
+        # Bounds
+        if i <= 0:
+            return self._values[0]
+
+        if i >= n - 1:
+            return self._values[-1]
+
+        # Linear interpolation between two nearest indices
+        i1 = math.floor(i)
+        i2 = math.ceil(i)
+        p = i - i1  # 0..1 point on a line between i1 and i2
+        y1 = self._values[i1]
+        y2 = self._values[i2]
+        return y1 + p * (y2 - y1)
 
 
 class FuzzySetCompound(FuzzySet):
@@ -85,13 +106,11 @@ class FuzzySetCompound(FuzzySet):
 
 class FuzzyUnion(FuzzySetCompound):
     def sample(self, x):
-        #return np.maximum(*(self.args[0].sample(x), self.args[1].sample(x))
         return max(a.sample(x) for a in self.args)
 
 
 class FuzzyIntersection(FuzzySetCompound):
     def sample(self, x):
-        #return np.minimum(self.args[0].sample(x), self.args[1].sample(x))
         return min(a.sample(x) for a in self.args)
 
 
@@ -140,7 +159,7 @@ class TriangularMf(MembershipFunction):
     def sample(self, x):
         left = (x - self.left) / (self.support - self.left)
         right = (self.right - x) / (self.right - self.support)
-        return np.maximum(0, np.minimum(left, right))
+        return max(0, min(left, right))
 
     def center(self):
         return self.support
@@ -156,7 +175,8 @@ class TrapezoidalMf(MembershipFunction):
     def sample(self, x):
         left = (x - self.left) / (self.left_support - self.left)
         right = (self.right - x) / (self.right - self.right_support)
-        return np.clip(np.minimum(left, right), 0, 1)
+        v = min(left, right)
+        return max(0, min(v, 1))  # clip v to 0..1
 
     def center(self):
         # NOT ACCURATE :D
@@ -176,7 +196,7 @@ class GaussianMf(MembershipFunction):
         self.std = std
 
     def sample(self, x):
-        return np.exp(-np.square(x - self.mean) / (2 * np.square(self.std)))
+        return math.exp(-(x - self.mean) ** 2 / (2 * self.std ** 2))
 
     def center(self):
         return self.mean
@@ -352,7 +372,12 @@ class Not(ConditionStatement):
 
 
 class R:
-    def __init__(self, var: Variable, mf: Union[str, MembershipFunction], when: ConditionStatement):
+    def __init__(
+            self,
+            var: Variable,
+            mf: Union[str, MembershipFunction],
+            when: ConditionStatement
+    ):
         self.var = var
         self.mf = self.var.get_mf(mf)
         self.condition = when
@@ -393,7 +418,7 @@ def plot_variable(v: Variable):
     import matplotlib.pyplot as plt
 
     x_min, x_max = v.bounds
-    x = np.linspace(x_min, x_max, 100)
+    x = list(iter_linear_space(x_min, x_max, 100))
 
     for mf_name, mf in v.membership_functions.items():
         plt.plot(x, mf.sample(x), label=mf_name)

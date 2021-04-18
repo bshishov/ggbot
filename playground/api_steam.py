@@ -10,9 +10,9 @@ async def _test():
     steam_api_key = os.environ['STEAM_WEB_API_KEY']
     steam_api = SteamApi(api_key=steam_api_key, language='ru')
 
-    #result = await steam_api.get_player_summary(to_steam_id_64(56145879))
+    result = await steam_api.get_player_summary(to_steam_id_64(99526321))
     #result = await steam_api.get_player_summary(76561198003451613)
-    result = await steam_api.get_dota_match_details(5949242155)
+    #result = await steam_api.get_dota_match_details(5949242155)
 
     pprint(result)
 
