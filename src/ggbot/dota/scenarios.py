@@ -13,20 +13,20 @@ __all__ = [
 
 
 def create_dota_scenario_handlers(memory: Memory, dota: Dota) -> Mapping[str, ScenarioHandler]:
-    dotabuff_id_user_var = 'dotabuff_id'
+    steam_id_user_var = 'steam_id'
 
     request_dotabuff_from_user = selector(
-        memory.check_user_var_exists(dotabuff_id_user_var),
+        memory.check_user_var_exists(steam_id_user_var),
         sequence(
-            reply_to_message("""Хз какой у тебя айди, 
-            скинь ссылку на свой профиль в Dotabuff или Opendota, я запомню"""),
+            reply_to_message("""Хз какой у тебя айди, скинь ссылку на свой профиль в Dotabuff 
+            или Opendota, я запомню"""),
             retry_until_success(
                 2,
                 selector(
                     sequence(
                         wait_for_message_from_user(30),
-                        parse_dotabuff_id_from_message(target_variable='dotabuff_id'),
-                        memory.save_user_var(dotabuff_id_user_var, '{{ dotabuff_id }}')
+                        parse_steam_id_from_message(target_variable='steam_id'),
+                        memory.set_user_var(steam_id_user_var, '{{ steam_id }}')
                     ),
                     always_fail(reply_to_message('Кинь ссылку либо айди'))
                 )
@@ -37,20 +37,20 @@ def create_dota_scenario_handlers(memory: Memory, dota: Dota) -> Mapping[str, Sc
 
     require_dotabuff = sequence(
         request_dotabuff_from_user,
-        memory.check_user_var_exists(dotabuff_id_user_var),
-        memory.copy_user_var_to_local(dotabuff_id_user_var, 'dotabuff_id'),
+        memory.check_user_var_exists(steam_id_user_var),
+        memory.copy_user_var_to_local(steam_id_user_var, 'steam_id'),
     )
 
     intent_my_dotabuff = sequence(
         require_dotabuff,
-        reply_to_message("https://www.dotabuff.com/players/{{ dotabuff_id }}")
+        reply_to_message("https://www.dotabuff.com/players/{{ steam_id }}")
     )
 
     intent_my_mmr = sequence(
         require_dotabuff,
         RequestOpenDotaAction(
             api_key=dota.api_key,
-            query="players/{{ dotabuff_id }}"
+            query="players/{{ steam_id }}"
         ),
         reply_to_message("Твой ммр по версии opendota: {{ result.mmr_estimate.estimate }}")
     )
@@ -59,7 +59,7 @@ def create_dota_scenario_handlers(memory: Memory, dota: Dota) -> Mapping[str, Sc
         require_dotabuff,
         RequestOpenDotaAction(
             api_key=dota.api_key,
-            query="players/{{ dotabuff_id }}/rankings"
+            query="players/{{ steam_id }}/rankings"
         ),
         reply_to_message("""Топ герои:
         {% for hero in (result|sort(attribute='score', reverse=False))[:5] %}
@@ -70,7 +70,7 @@ def create_dota_scenario_handlers(memory: Memory, dota: Dota) -> Mapping[str, Sc
         require_dotabuff,
         RequestOpenDotaAction(
             api_key=dota.api_key,
-            query="players/{{ dotabuff_id }}/recentMatches"
+            query="players/{{ steam_id }}/recentMatches"
         ),
         GeneratePhraseAction(dota.phrase_generator),
         SendEmbed(

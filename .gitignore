@@ -1,7 +1,7 @@
 # gg-bot ignores
 .cache/
 .gsc_service_account.json
-storage.db
+prod_storage.db
 .idea/
 
 # Created by .ignore support plugin (hsz.mobi)

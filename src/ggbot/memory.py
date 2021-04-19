@@ -77,7 +77,7 @@ class Memory(BotComponent):
             return self.storage.contains_key(context.render_template(key))
         return _fn
 
-    def save_user_var(self, key: str, value: str):
+    def set_user_var(self, key: str, value: str):
         async def _fn(context: Context):
             nonlocal self
             self.storage.set(

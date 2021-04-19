@@ -17,7 +17,7 @@ __all__ = [
     'RequestOpenDotaAction',
     'CountMatchupsAction',
     'GeneratePhraseAction',
-    'parse_dotabuff_id_from_message'
+    'parse_steam_id_from_message'
 ]
 
 
@@ -88,7 +88,6 @@ class Dota(BotComponent):
 class RequestOpenDotaAction:
     api_key: str
     query: str
-    require_steam_id: bool = True
 
     async def __call__(self, context: Context) -> bool:
         query = context.render_template(self.query)
@@ -143,28 +142,28 @@ class GeneratePhraseAction:
         return True
 
 
-DOTA_ID_REGEXES = (
+STEAM_ID_REGEXES = (
     re.compile(r'dotabuff.com/players/(\d+)'),
     re.compile(r'opendota.com/players/(\d+)'),
     re.compile(r'(\d+)'),
 )
 
 
-def _parse_dotabuff_id(message: str) -> Optional[str]:
-    for r in DOTA_ID_REGEXES:
+def _parse_steam_id(message: str) -> Optional[str]:
+    for r in STEAM_ID_REGEXES:
         match = r.search(message)
         if match:
             return match.group(1)
     return None
 
 
-def parse_dotabuff_id_from_message(target_variable: str):
+def parse_steam_id_from_message(target_variable: str):
     async def _fn(context: Context):
-        dotabuff_id = _parse_dotabuff_id(str(context.message.content))
+        steam_id = _parse_steam_id(str(context.message.content))
 
-        if not dotabuff_id:
+        if not steam_id:
             return False
 
-        context.local[target_variable] = dotabuff_id
+        context.local[target_variable] = steam_id
         return True
     return _fn
