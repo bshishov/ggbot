@@ -1,7 +1,7 @@
 from typing import Iterable, Optional
-import pprint
 import re
 from dataclasses import dataclass
+import logging
 
 import aiohttp
 
@@ -19,6 +19,8 @@ __all__ = [
     'GeneratePhraseAction',
     'parse_steam_id_from_message'
 ]
+
+_logger = logging.getLogger(__name__)
 
 
 SKILL_BRACKETS = {
@@ -95,9 +97,8 @@ class RequestOpenDotaAction:
             response = await session.get(f'{OPENDOTA_API_URL}{query}', params={
                 'api_key': self.api_key,
             })
-            print(response.url)
             result = await response.json()
-            pprint.pprint(result)
+            _logger.debug(f'Received data url={response.url} response={result}')
             context.local['result'] = result
 
             if response.status == 200:

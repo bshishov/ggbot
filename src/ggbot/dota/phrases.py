@@ -1,5 +1,6 @@
 from typing import Optional
 import random
+import logging
 
 from dataclasses import dataclass
 
@@ -13,6 +14,8 @@ __all__ = [
     'parse_rules',
     'PhraseGenerator'
 ]
+
+_logger = logging.getLogger(__name__)
 
 
 def default_numeric_set(
@@ -46,12 +49,12 @@ def build_rules(phrases: IndexedCollection[list], nlu, variables: list[Variable]
 
         match = nlu.match_intent_one_of(condition, ['statements'])
         if not match:
-            print(f'Failed to parse: {condition}')
+            _logger.warning(f'Failed to parse: {condition}')
             continue
 
         match_rules = match.slots.get('rules')
         if not match_rules:
-            print(f'No rules in match: {match}')
+            _logger.warning(f'No rules in match: {match}')
             continue
 
         operands = []
@@ -70,10 +73,9 @@ def build_rules(phrases: IndexedCollection[list], nlu, variables: list[Variable]
                 operands.append(Is(v, value_name))
 
         rule = And(*operands)
-        print(phrase)
-        print(condition)
-        print(rule)
-        print()
+        _logger.debug(phrase)
+        _logger.debug(condition)
+        _logger.debug(rule)
         phrase_rules.append((rule, phrase))
     return phrase_rules
 
@@ -158,7 +160,7 @@ class PhraseGenerator:
             phrase = phrase.format(name=player_name, hero=hero_name)
             res = condition.evaluate(**match)
             if res > self.threshold:
-                print(f'{res:.2f}  {phrase}')
+                _logger.debug(f'{res:.2f}  {phrase}')
 
                 #population.append(phrase)
                 #weights.append(res)
@@ -177,5 +179,5 @@ class PhraseGenerator:
         #weights = np.asarray(weights)
         #weights = weights / weights.sum()
         #p = np.random.choice(population, 1, p=weights)[0]
-        print(f'Selected: {p}')
+        _logger.debug(f'Selected: {p}')
         return p
