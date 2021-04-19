@@ -16,7 +16,6 @@ __all__ = [
     'load_yamls',
     'local_time_cache',
     'get_item_from_dict',
-    'get_item_from_dict_or_env',
     'require_item_from_dict_or_env'
 ]
 
@@ -115,25 +114,16 @@ def get_item_from_dict(data: dict, path: str):
     return obj
 
 
-def get_item_from_dict_or_env(data: dict, path: str, env_var: Optional[str] = None):
-    """Will try to traverse a dict using some.separated.path,
-    if dict lookups fails then env var SOME_SEPARATED_PATH will be used
-    """
-    obj = get_item_from_dict(data, path)
-    if obj is None:
-        if not env_var:
-            env_var = path.replace('.', '_').upper()
-        return os.environ.get(env_var)
-    return obj
-
-
 def require_item_from_dict_or_env(data: dict, path: str, env_var: Optional[str] = None):
-    obj = get_item_from_dict(data, path)
+    if not env_var:
+        env_var = path.replace('.', '_').upper()
+
+    obj = os.environ.get(env_var)
+
     if obj is None:
-        if not env_var:
-            env_var = path.replace('.', '_').upper()
-        obj = os.environ.get(env_var)
-        if obj is None:
-            raise KeyError(f'Missing value for key {path} or env variable {env_var}')
-        return os.environ.get(env_var)
+        obj = get_item_from_dict(data, path)
+
+    if obj is None:
+        raise KeyError(f'Missing value for key {path} or env variable {env_var}')
+
     return obj
