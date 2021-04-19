@@ -1,7 +1,8 @@
 from typing import Optional, Any
 import logging
 import asyncio
-from dataclasses import dataclass, field
+import time
+from dataclasses import dataclass
 
 import discord
 
@@ -24,19 +25,40 @@ __all__ = [
 _logger = logging.getLogger(__name__)
 
 
-@dataclass
-class MessageFromUserExpectation(MessageExpectation):
-    expected_user_id: int
-    priority: float = 1
-    event: asyncio.Event = field(default_factory=asyncio.Event)
+class TimedEventMessageExpectation(MessageExpectation):
+    def __init__(self, timeout: float, priority: float):
+        self.timeout = timeout
+        self.expire_at = time.time() + timeout
+        self.event = asyncio.Event()
+        self.priority = priority
+
+    def get_priority(self) -> float:
+        return self.priority
+
+    def is_active(self) -> bool:
+        if self.event.is_set():
+            return False
+        return time.time() < self.expire_at
+
+    async def can_be_satisfied(self, message: discord.Message, context: Context, nlu) -> bool:
+        raise NotImplementedError
+
+    async def satisfy(self, message: discord.Message, context: Context):
+        raise NotImplementedError
+
+    async def wait_for_event(self):
+        await asyncio.wait_for(self.event.wait(), timeout=self.timeout)
+
+
+class MessageFromUserExpectation(TimedEventMessageExpectation):
+    def __init__(self, expected_user_id: int, timeout: float, priority: float = 1.0):
+        super().__init__(timeout=timeout, priority=priority)
+        self.expected_user_id = expected_user_id
 
     def __post_init__(self):
         _logger.debug(f'Waiting for message from {self.expected_user_id}')
 
-    async def get_priority(self) -> float:
-        return self.priority
-
-    async def can_be_satisfied(self, message: discord.Message, context: 'Context', nlu) -> bool:
+    async def can_be_satisfied(self, message: discord.Message, context: Context, nlu) -> bool:
         _logger.debug(f'Checking if message.author.id '
                       f'expected_user_id={self.expected_user_id} '
                       f'message.author.id={message.author.id} ({message.author.name})'
@@ -44,7 +66,7 @@ class MessageFromUserExpectation(MessageExpectation):
                       f'ctx={context.name}')
         return message.author.id == self.expected_user_id
 
-    async def satisfy(self, message: discord.Message, context: 'Context'):
+    async def satisfy(self, message: discord.Message, context: Context):
         _logger.debug(f'Satisfying {self.__class__.__name__} expectation '
                       f'expected_user_id={self.expected_user_id} '
                       f'message.author.id={message.author.id} ({message.author.name})'
@@ -55,16 +77,19 @@ class MessageFromUserExpectation(MessageExpectation):
 
 
 @dataclass
-class MessageFromUserWithIntentExpectation(MessageExpectation):
-    expected_user_id: int
-    intents: list[str]
-    priority: float = 1
-    event: asyncio.Event = field(default_factory=asyncio.Event)
+class MessageFromUserWithIntentExpectation(TimedEventMessageExpectation):
+    def __init__(
+            self,
+            expected_user_id: int,
+            intents: list[str],
+            timeout: float,
+            priority: float = 1.0
+    ):
+        super().__init__(timeout=timeout, priority=priority)
+        self.expected_user_id = expected_user_id
+        self.intents = intents
 
-    async def get_priority(self) -> float:
-        return self.priority
-
-    async def can_be_satisfied(self, message: discord.Message, context: 'Context', nlu) -> bool:
+    async def can_be_satisfied(self, message: discord.Message, context: Context, nlu) -> bool:
         if not message.author.id == self.expected_user_id:
             return False
 
@@ -75,33 +100,26 @@ class MessageFromUserWithIntentExpectation(MessageExpectation):
         context.match = match
         return True
 
-    async def satisfy(self, message: discord.Message, context: 'Context'):
+    async def satisfy(self, message: discord.Message, context: Context):
         context.message = message
         self.event.set()
 
 
-@dataclass
-class MessageFromChannelExpectation(MessageExpectation):
-    expected_channel: int
-    priority: float = 0.5
-    event: asyncio.Event = field(default_factory=asyncio.Event)
-
-    def __post_init__(self):
-        _logger.debug(f'Waiting for message from channel {self.expected_channel}')
-
-    async def get_priority(self) -> float:
-        return self.priority
+class MessageFromChannelExpectation(TimedEventMessageExpectation):
+    def __init__(self, expected_channel_id: int, timeout: float, priority: float = 0.5):
+        super().__init__(timeout=timeout, priority=priority)
+        self.expected_channel_id = expected_channel_id
 
     async def can_be_satisfied(self, message: discord.Message, context: 'Context', nlu) -> bool:
         _logger.debug(f'Checking {self.__class__.__name__} '
-                      f'expected_channel={self.expected_channel} '
+                      f'expected_channel={self.expected_channel_id} '
                       f'message.channel.id={message.channel.id} ({message.channel.name})'
                       f'ctx={context.name}')
-        return message.channel.id == self.expected_channel
+        return message.channel.id == self.expected_channel_id
 
     async def satisfy(self, message: discord.Message, context: 'Context'):
         _logger.debug(f'Satisfying {self.__class__.__name__} expectation '
-                      f'expected_channel={self.expected_channel} '
+                      f'expected_channel={self.expected_channel_id} '
                       f'message.channel.id={message.channel.id} ({message.channel.name})'
                       f'ctx={context.name}')
         context.message = message
@@ -118,10 +136,14 @@ def message_intent_is(intent: str):
 
 def wait_for_message_from_user_with_intents(intents: list[str], seconds: float = 7):
     async def _fn(ctx: Context):
-        expectation = MessageFromUserWithIntentExpectation(ctx.message.author.id, intents)
-        ctx.expectations.append(expectation)
+        expectation = MessageFromUserWithIntentExpectation(
+            expected_user_id=ctx.message.author.id,
+            intents=intents,
+            timeout=seconds
+        )
+        ctx.expect(expectation)
         try:
-            await asyncio.wait_for(expectation.event.wait(), timeout=seconds)
+            await expectation.wait_for_event()
             return True
         except asyncio.TimeoutError:
             return False
@@ -130,10 +152,10 @@ def wait_for_message_from_user_with_intents(intents: list[str], seconds: float =
 
 def wait_for_message_from_user(seconds: float = 7):
     async def _fn(ctx: Context):
-        expectation = MessageFromUserExpectation(ctx.message.author.id)
-        ctx.expectations.append(expectation)
+        expectation = MessageFromUserExpectation(ctx.message.author.id, timeout=seconds)
+        ctx.expect(expectation)
         try:
-            await asyncio.wait_for(expectation.event.wait(), timeout=seconds)
+            await expectation.wait_for_event()
             return True
         except asyncio.TimeoutError:
             return False
@@ -142,10 +164,10 @@ def wait_for_message_from_user(seconds: float = 7):
 
 def wait_for_message_from_channel(seconds: float = 7):
     async def _fn(ctx: Context):
-        expectation = MessageFromChannelExpectation(ctx.message.channel.id)
-        ctx.expectations.append(expectation)
+        expectation = MessageFromChannelExpectation(ctx.message.channel.id, timeout=seconds)
+        ctx.expect(expectation)
         try:
-            await asyncio.wait_for(expectation.event.wait(), timeout=seconds)
+            await expectation.wait_for_event()
             return True
         except asyncio.TimeoutError:
             return False

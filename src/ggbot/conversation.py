@@ -68,9 +68,8 @@ class ConversationManager:
         if self.conversations:
             expectations = []  # type: List[tuple[MessageExpectation, float, Context]]
             for conversation in self.conversations:
-                for e in conversation.context.expectations:
-                    priority = await e.get_priority()
-                    expectations.append((e, priority, conversation.context))
+                for e in conversation.context.get_active_message_expectations():
+                    expectations.append((e, e.get_priority(), conversation.context))
 
             # Order expectations by priority
             expectations = sorted(expectations, key=lambda _: _[1], reverse=True)
@@ -78,7 +77,6 @@ class ConversationManager:
             # Try match expectations
             for e, priority, ctx in expectations:
                 if await e.can_be_satisfied(message, ctx, self.nlu):
-                    ctx.expectations.remove(e)
                     await e.satisfy(message, ctx)
                     return
 

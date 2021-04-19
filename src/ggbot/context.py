@@ -68,7 +68,10 @@ class UserContext:
 
 
 class MessageExpectation:
-    async def get_priority(self) -> float:
+    def is_active(self) -> bool:
+        raise NotImplementedError
+
+    def get_priority(self) -> float:
         raise NotImplementedError
 
     async def can_be_satisfied(self, message: discord.Message, context: 'Context', nlu) -> bool:
@@ -90,7 +93,7 @@ class Context:
     local: Dict[str, Any] = field(default_factory=dict)
     name: str = field(default_factory=_generate_uuid)
     expecting_message_from: List[discord.Message] = field(default_factory=list)
-    expectations: List[MessageExpectation] = field(default_factory=list)
+    _expectations: List[MessageExpectation] = field(default_factory=list)
 
     def get_template_params(self):
         params = {
@@ -121,3 +124,14 @@ class Context:
 
         return rendered
 
+    def expect(self, expectation: MessageExpectation):
+        if expectation.is_active():
+            self._expectations.append(expectation)
+
+    def get_active_message_expectations(self) -> List[MessageExpectation]:
+        active = []
+        for exp in self._expectations:
+            if exp.is_active():
+                active.append(exp)
+        self._expectations = active
+        return active
