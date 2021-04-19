@@ -119,6 +119,7 @@ class Cached(Source):
     def __post_init__(self):
         filename = hashlib.md5(self.source.get_uri().encode()).hexdigest()[:8]
         self._cache_path = pathlib.Path(self.cache_dir, f'{filename}.dat')
+        os.makedirs(self.cache_dir, exist_ok=True)
 
     def get_uri(self) -> str:
         return str(self._cache_path.absolute())
