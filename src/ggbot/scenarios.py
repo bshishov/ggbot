@@ -1,6 +1,6 @@
 from .btree import *
 from .actions import *
-from .bot import ScenarioHandler
+from .conversation import ScenarioHandler
 
 
 __all__ = [

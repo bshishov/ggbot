@@ -2,6 +2,7 @@ from typing import Any, Dict, Union, List
 from dataclasses import dataclass, field
 import logging
 import uuid
+import re
 
 import discord
 import jinja2
@@ -26,14 +27,35 @@ def _generate_uuid() -> str:
 
 StrOrTemplate = Union[str, jinja2.Template]
 
+EMOJI_RE = re.compile(r':[^:\s]+:')
+
 
 @dataclass
 class BotContext:
     template_env: jinja2.environment.Environment
     last_answer: discord.Message = None
+    client: discord.Client = None
 
     def make_template_from_string(self, source: str) -> jinja2.Template:
         return self.template_env.from_string(source)
+
+    def normalize_emoji(self, emoji: str) -> str:
+        if emoji.startswith('<') and emoji.endswith('>'):
+            # already normalized
+            return emoji
+
+        emoji = emoji.strip(' \n\r\t:')
+
+        found: discord.Emoji = discord.utils.get(self.client.emojis, name=emoji)
+        if found:
+            return str(found)
+
+        return f':{emoji}:'
+
+    def resolve_emojis(self, message: str) -> str:
+        def _norm_emoji(match: re.Match):
+            return self.normalize_emoji(match.group(0))
+        return re.sub(EMOJI_RE, _norm_emoji, message)
 
 
 @dataclass
@@ -86,10 +108,16 @@ class Context:
             }
         return params
 
-    def render_template(self, template: StrOrTemplate):
+    def render_template(self, template: StrOrTemplate, resolve_emoji=True):
         if isinstance(template, jinja2.Template):
             compiled = template
         else:
             compiled = self.bot.make_template_from_string(template)
-        return compiled.render(self.get_template_params())
+
+        rendered = compiled.render(self.get_template_params())
+
+        if isinstance(rendered, str) and resolve_emoji:
+            rendered = self.bot.resolve_emojis(rendered)
+
+        return rendered
 

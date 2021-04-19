@@ -3,7 +3,7 @@ from typing import Mapping
 from ggbot.memory import Memory
 from ggbot.btree import *
 from ggbot.actions import *
-from ggbot.bot import *
+from ggbot.conversation import *
 
 from .component import *
 
@@ -80,8 +80,8 @@ def create_dota_scenario_handlers(memory: Memory, dota: Dota) -> Mapping[str, Sc
             Посмотреть на [Dotabuff](https://www.dotabuff.com/matches/{{ result[0].match_id }}), [OpenDota](https://www.opendota.com/matches/{{ result[0].match_id }})""",
             title='{{ phrase }}',
             #url="https://www.dotabuff.com/matches/{{ result[0].match_id }}",
-            #thumbnail="https://cdn.origin.steamstatic.com/apps/dota2/images/heroes/{{ (result[0].hero_id|dota_hero_id_to_name)[14:] }}_icon.png",
-            thumbnail="https://www.dotabuff.com/assets/heroes/{{ (result[0].hero_id|dota_hero_id_to_name)[14:] }}.jpg",
+            thumbnail="https://cdn.origin.steamstatic.com/apps/dota2/images/heroes/{{ (result[0].hero_id|dota_hero_id_to_name)[14:] }}_icon.png",
+            #thumbnail="https://www.dotabuff.com/assets/heroes/{{ (result[0].hero_id|dota_hero_id_to_name)[14:] }}.jpg",
             fields={
                 #"Длительность": "{{ result[0].duration // 60 }}:{{ result[0].duration % 60 }}",
                 #№"Герой": "{{ result[0].hero_id|dota_hero_id_to_localized_name }}",
@@ -89,11 +89,11 @@ def create_dota_scenario_handlers(memory: Memory, dota: Dota) -> Mapping[str, Sc
                 #"Skill bracket": "{{ result[0].skill|dota_skill_id_to_name }}",
                 # Роль: "{{ result[0].lane }} {{ result[0].lane_role }} ({{ result[0].is_roaming }})"
                 # radiant_win: "{{ result[0].radiant_win }}"
-                "<:gold2:833020479379996703> Золото/Опыт": "{{ result[0].gold_per_min }} / {{ result[0].xp_per_min }}",
+                ":gold: Золото/Опыт": "{{ result[0].gold_per_min }} / {{ result[0].xp_per_min }}",
                 ":crossed_swords: Урона по героям": "{{ (result[0].hero_damage / 1000)|round|int }} k",
                 ":homes: Урона по домикам": "{{ (result[0].tower_damage / 1000)|round|int }} k",
-                "<:heal:833023249926979645> Лечения": "{{ (result[0].hero_healing / 1000)|round|int }} k",
-                "<:creep:833017718696312902> Добито крипов": "{{ result[0].last_hits }}",
+                ":heal: Лечения": "{{ (result[0].hero_healing / 1000)|round|int }} k",
+                ":creep: Добито крипов": "{{ result[0].last_hits }}",
             },
             #footer="{{ result[0].match_id }} - {{ (result[0].start_time + result[0].duration)|from_timestamp('%d.%m.%Y %H:%M') }}"
             #footer="Посмотреть на [Dotabuff](https://www.dotabuff.com/matches/{{ result[0].match_id }}), [OpenDota](https://www.opendota.com/matches/5936636695)"

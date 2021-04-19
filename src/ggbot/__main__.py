@@ -6,7 +6,7 @@ import toml
 from jinja2.nativetypes import NativeEnvironment
 
 from ggbot.client import Client
-from ggbot.bot import Bot
+from ggbot.conversation import ConversationManager
 from ggbot.context import BotContext
 from ggbot.assets import yaml_dict_from_file
 from ggbot.text.tokema_integration import TokemaNlu, rules_from_grammar_dict
@@ -101,8 +101,9 @@ async def main(config_filename: str = 'app.toml'):
         **dota_handlers
     }
 
-    bot = Bot(nlu=nlu, intent_handlers=handlers, context=context)
-    client = Client(bot=bot)
+    conversation_manager = ConversationManager(nlu=nlu, intent_handlers=handlers, context=context)
+    client = Client(conversation_manager)
+    context.client = client
 
     discord_token = require_item_from_dict_or_env(config, 'discord.token')
     try:

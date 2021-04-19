@@ -9,7 +9,11 @@ from ggbot.text import NluBase
 from ggbot.context import *
 
 
-__all__ = ['Bot', 'IntentHandler', 'ScenarioHandler']
+__all__ = [
+    'ConversationManager',
+    'IntentHandler',
+    'ScenarioHandler'
+]
 
 _logger = logging.getLogger(__name__)
 
@@ -43,12 +47,12 @@ async def try_run(coroutine):
         logging.exception(err)
 
 
-class Bot:
+class ConversationManager:
     def __init__(
             self,
             nlu: NluBase,
             intent_handlers: dict[str, IntentHandler],
-            context: BotContext
+            context: BotContext,
     ):
         self.nlu = nlu
         self.intent_handlers = intent_handlers

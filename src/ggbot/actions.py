@@ -243,6 +243,7 @@ class SendEmbed:
         if self.fields:
             for field_name, field_value in self.fields.items():
                 field_value = context.render_template(field_value)
+                field_name = context.render_template(field_name)
                 if field_name and field_value is not None:
                     embed.add_field(name=field_name, value=field_value)
 
