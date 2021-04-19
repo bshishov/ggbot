@@ -14,7 +14,7 @@ class IntentMatchResultBase:
     def get_intent(self) -> str:
         raise NotImplementedError
 
-    def get_slot_value(self, slot_name: str) -> Optional[str]:
+    def get_slot_value(self, slot_name: str):
         raise NotImplementedError
 
     def get_all_slots(self) -> dict[str, str]:

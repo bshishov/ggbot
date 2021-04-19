@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List
 import random
 import logging
 
@@ -6,7 +6,7 @@ from dataclasses import dataclass
 
 from ggbot.fuzzy import *
 from ggbot.assets import *
-from ggbot.text.tokema_integration import TokemaNlu
+from ggbot.text.base import NluBase
 
 
 __all__ = [
@@ -36,7 +36,18 @@ def default_numeric_set(
     }
 
 
-def build_rules(phrases: IndexedCollection[list], nlu, variables: list[Variable]):
+@dataclass
+class PhraseRule:
+    condition: And
+    phrase_template: str
+    weight: float = 1.0
+
+
+def build_rules(
+        phrases: IndexedCollection[list],
+        nlu: NluBase,
+        variables: List[Variable]
+) -> List[PhraseRule]:
     variables = {v.name: v for v in variables}
 
     phrase_rules = []
@@ -52,7 +63,7 @@ def build_rules(phrases: IndexedCollection[list], nlu, variables: list[Variable]
             _logger.warning(f'Failed to parse: {condition}')
             continue
 
-        match_rules = match.slots.get('rules')
+        match_rules = match.get_slot_value('rules')
         if not match_rules:
             _logger.warning(f'No rules in match: {match}')
             continue
@@ -72,11 +83,18 @@ def build_rules(phrases: IndexedCollection[list], nlu, variables: list[Variable]
                 v = variables[var_name]
                 operands.append(Is(v, value_name))
 
-        rule = And(*operands)
+        rule_condition = And(*operands)
         _logger.debug(phrase)
         _logger.debug(condition)
-        _logger.debug(rule)
-        phrase_rules.append((rule, phrase))
+        _logger.debug(rule_condition)
+
+        phrase_rule = PhraseRule(
+            condition=rule_condition,
+            phrase_template=phrase,
+            weight=1 + 0.5 * len(operands)  # Longer the AND statement -> higher the weight
+        )
+
+        phrase_rules.append(phrase_rule)
     return phrase_rules
 
 
@@ -103,7 +121,7 @@ def player_variables():
         yield bool_var(f'player_{p}')
 
 
-def parse_rules(raw_phrases: IndexedCollection, nlu: TokemaNlu):
+def parse_rules(raw_phrases: IndexedCollection, nlu: NluBase) -> List[PhraseRule]:
     variables = [
         Variable('kills', (0, 25), **default_numeric_set(0, 25)),
         Variable('deaths', (0, 20), **default_numeric_set(0, 20)),
@@ -127,7 +145,7 @@ def parse_rules(raw_phrases: IndexedCollection, nlu: TokemaNlu):
 
 @dataclass
 class PhraseGenerator:
-    phrase_rules: list[tuple[ConditionStatement, str]]
+    phrase_rules: List[PhraseRule]
     threshold: float = 0.1
 
     def generate_phrase(self, match: dict, player_name: str, hero_name: str) -> Optional[str]:
@@ -155,15 +173,11 @@ class PhraseGenerator:
         match['ka_per_min'] = (match['kills'] + match['assists']) / duration_minutes
 
         population = []
-        #weights = []
-        for condition, phrase in self.phrase_rules:
-            phrase = phrase.format(name=player_name, hero=hero_name)
-            res = condition.evaluate(**match)
+        for phrase_rule in self.phrase_rules:
+            phrase = phrase_rule.phrase_template.format(name=player_name, hero=hero_name)
+            res = phrase_rule.condition.evaluate(**match) * phrase_rule.weight
             if res > self.threshold:
                 _logger.debug(f'{res:.2f}  {phrase}')
-
-                #population.append(phrase)
-                #weights.append(res)
                 population.append((phrase, res))
 
         if not population:
@@ -176,8 +190,5 @@ class PhraseGenerator:
         rnd.seed(match['match_id'])
         p, res = rnd.choice(population)
 
-        #weights = np.asarray(weights)
-        #weights = weights / weights.sum()
-        #p = np.random.choice(population, 1, p=weights)[0]
         _logger.debug(f'Selected: {p}')
         return p
