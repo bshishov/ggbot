@@ -1,4 +1,6 @@
-import os
+import json
+import pprint
+import logging
 
 from jinja2.nativetypes import NativeEnvironment
 
@@ -9,12 +11,11 @@ from ggbot.spreadsheet import GoogleSpreadsheetsClient
 
 
 def main():
-    import pprint
+    logging.basicConfig(level=logging.DEBUG)
 
     player_name = 'Shide'
     hero = '{hero}'
 
-    import json
     with open('opendota_matches_shide.json', encoding='utf-8') as f:
         MATCHES = json.load(f)
 
@@ -32,11 +33,25 @@ def main():
     phrase_rules = parse_rules(phrases_table, nlu)
     pgen = PhraseGenerator(phrase_rules)
 
+    variables = get_dota_variables()
+
     for match in MATCHES:
         print('\n\n\n')
         pprint.pprint(match)
         print('\n')
         p = pgen.generate_phrase(match, player_name, hero)
+
+        for v in variables:
+            if v.name in match:
+                value = match[v.name]
+                #linguistic_value = v.fuzzify_max(value)
+                res = v.fuzzify_all(value)
+                print(f'{v.name}: {value}')
+                print(res)
+
+                print()
+
+        break
 
 
 if __name__ == '__main__':

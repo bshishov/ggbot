@@ -32,7 +32,7 @@ class SpreadsheetTable(IndexedCollection[dict]):
 
     @local_time_cache(5 * 60)
     def _get_data(self):
-        values = self.worksheet.get_all_values()
+        values = self.worksheet.get_all_values()[self.first_row_index:]
         n_cols = len(self.header)
 
         if self.key_field is None:

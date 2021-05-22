@@ -12,7 +12,8 @@ from ggbot.text.base import NluBase
 __all__ = [
     'build_rules',
     'parse_rules',
-    'PhraseGenerator'
+    'PhraseGenerator',
+    'get_dota_variables'
 ]
 
 _logger = logging.getLogger(__name__)
@@ -40,7 +41,7 @@ def default_numeric_set(
 class PhraseRule:
     condition: And
     phrase_template: str
-    weight: float = 1.0
+    weight: float
 
 
 def build_rules(
@@ -51,9 +52,10 @@ def build_rules(
     variables = {v.name: v for v in variables}
 
     phrase_rules = []
-    for condition, phrase in phrases:
+    for condition, weight, phrase in phrases:
         condition = condition.strip()
         phrase = phrase.strip()
+        weight = float(weight.replace(',', '.'))
 
         if not condition or not phrase:
             continue
@@ -91,38 +93,15 @@ def build_rules(
         phrase_rule = PhraseRule(
             condition=rule_condition,
             phrase_template=phrase,
-            weight=1 + 0.5 * len(operands)  # Longer the AND statement -> higher the weight
+            weight=weight + 0.5 * len(operands)  # Longer the AND statement -> higher the weight
         )
 
         phrase_rules.append(phrase_rule)
     return phrase_rules
 
 
-def bool_var(name: str) -> Variable:
-    return Variable(
-        name,
-        bounds=(0, 1),
-        false=TriangularMf(-1, 0, 1),
-        true=TriangularMf(0, 1, 2),
-    )
-
-
-def player_variables():
-    players = [
-        'shide',
-        'bangodus',
-        'varenick',
-        'avokadro',
-        'mrmerkone,'
-        'choco boy'
-    ]
-
-    for p in players:
-        yield bool_var(f'player_{p}')
-
-
-def parse_rules(raw_phrases: IndexedCollection, nlu: NluBase) -> List[PhraseRule]:
-    variables = [
+def get_dota_variables():
+    return [
         Variable('kills', (0, 25), **default_numeric_set(0, 25)),
         Variable('deaths', (0, 20), **default_numeric_set(0, 20)),
         Variable('assists', (0, 25), **default_numeric_set(0, 25)),
@@ -140,6 +119,10 @@ def parse_rules(raw_phrases: IndexedCollection, nlu: NluBase) -> List[PhraseRule
         Variable('last_hits', (0, 500), **default_numeric_set(0, 500)),
         Variable('result', (0, 1), lose=TriangularMf(-1, 0, 1), won=TriangularMf(0, 1, 2))
     ]
+
+
+def parse_rules(raw_phrases: IndexedCollection, nlu: NluBase) -> List[PhraseRule]:
+    variables = get_dota_variables()
     return build_rules(raw_phrases, nlu, variables)
 
 
@@ -174,9 +157,10 @@ class PhraseGenerator:
 
         population = []
         for phrase_rule in self.phrase_rules:
-            phrase = phrase_rule.phrase_template.format(name=player_name, hero=hero_name)
             res = phrase_rule.condition.evaluate(**match) * phrase_rule.weight
+
             if res > self.threshold:
+                phrase = phrase_rule.phrase_template.format(name=player_name, hero=hero_name)
                 _logger.debug(f'{res:.2f}  {phrase}')
                 population.append((phrase, res))
 
