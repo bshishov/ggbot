@@ -1,5 +1,6 @@
-from typing import Any, Dict, Union, List
+from typing import Any, Dict, Union, List, TypeVar, Generic
 from dataclasses import dataclass, field
+from abc import ABCMeta, abstractmethod
 import logging
 import uuid
 import re
@@ -8,14 +9,18 @@ import discord
 import jinja2
 
 from ggbot.text import IntentMatchResultBase
+from ggbot import bttypes as types
 
 
 __all__ = [
+    'IVariable',
+    'IValue',
     'StrOrTemplate',
     'BotContext',
     'UserContext',
     'Context',
-    'MessageExpectation'
+    'MessageExpectation',
+    'Variable',
 ]
 
 _logger = logging.getLogger(__name__)
@@ -26,8 +31,22 @@ def _generate_uuid() -> str:
 
 
 StrOrTemplate = Union[str, jinja2.Template]
+TVar = TypeVar('TVar')
 
 EMOJI_RE = re.compile(r':[^:\s]+:')
+
+
+class IValue(Generic[TVar]):
+    @abstractmethod
+    def evaluate(self, context: 'Context') -> TVar: ...
+
+    @abstractmethod
+    def get_return_type(self) -> types.IType: ...
+
+
+class IVariable(IValue[TVar], metaclass=ABCMeta):
+    @abstractmethod
+    def get_name(self) -> str: ...
 
 
 @dataclass
@@ -135,3 +154,25 @@ class Context:
                 active.append(exp)
         self._expectations = active
         return active
+
+    def set_variable(self, variable: IVariable, value):
+        self.local[variable.get_name()] = value
+
+    def get_var_value(self, variable: IVariable[TVar]) -> TVar:
+        return self.local.get(variable.get_name())
+
+
+@dataclass(frozen=True)
+class Variable(IVariable[TVar]):
+    name: str
+    type: types.IType
+
+    def get_name(self) -> str:
+        return self.name
+
+    def get_return_type(self) -> types.IType:
+        return self.type
+
+    def evaluate(self, context: Context) -> TVar:
+        return context.get_var_value(self)
+

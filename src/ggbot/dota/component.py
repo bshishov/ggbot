@@ -1,23 +1,46 @@
-from typing import Iterable, Optional
+from typing import Iterable, Optional, Set, List
 import re
-from dataclasses import dataclass
 import logging
-
+import time
 import aiohttp
 
-from ggbot.context import BotContext, Context
+from attr import dataclass
+
+
+from spec import spec
+from ggbot.context import BotContext, Context, IVariable, IValue
 from ggbot.component import BotComponent
-from ggbot.dota.phrases import PhraseGenerator
 from ggbot.assets import *
 from ggbot.utils import local_time_cache
+from ggbot.opendota import OpenDotaApi, DotaMatch, Player
+from ggbot.dota.phrases import PhraseGenerator
+from ggbot.dota.medals import *
+from ggbot.dota.predicates import find_player_by_steam_id
+from ggbot.bttypes import *
 
 
 __all__ = [
+    'DOTA_MATCH',
+    'DOTA_MATCH_PLAYER',
+    'OPENDOTA_API_URL',
     'Dota',
     'RequestOpenDotaAction',
     'CountMatchupsAction',
-    'GeneratePhraseAction',
-    'parse_steam_id_from_message'
+    'GeneratePhraseForPlayer',
+    'parse_steam_id_from_message',
+    'RequestMatch',
+    'FetchLastMatchId',
+    'CheckMatchIsParsed',
+    'RequestParseMatch',
+    'CalculateMedals',
+    'FormattedMedals',
+    'HeroName',
+    'MatchPlayer',
+    'MatchDurationMinutes',
+    'PlayerHeroId',
+    'MatchPlayerResultString',
+    'PlayerHeroIconUrl',
+    'CheckSecondsSinceRecentMatchGreaterThan'
 ]
 
 _logger = logging.getLogger(__name__)
@@ -30,6 +53,8 @@ SKILL_BRACKETS = {
 }
 
 OPENDOTA_API_URL = 'https://api.opendota.com/api/'
+DOTA_MATCH = make_struct_from_python_type(DotaMatch)
+DOTA_MATCH_PLAYER = make_struct_from_python_type(Player)
 
 
 def skill_id_to_name(skill_id: str) -> str:
@@ -72,10 +97,10 @@ class Dota(BotComponent):
         )
         self.phrase_generator = phrase_generator
 
-    def hero_id_to_name(self, id: str):
+    def hero_id_to_name(self, id: int):
         return self.heroes.get_item_by_index(id)['name']
 
-    def hero_id_to_localized_name(self, id: str):
+    def hero_id_to_localized_name(self, id: int):
         return self.heroes.get_item_by_index(id)['localized_name']
 
     async def init(self, context: BotContext):
@@ -89,10 +114,13 @@ class Dota(BotComponent):
 @dataclass
 class RequestOpenDotaAction:
     api_key: str
-    query: str
+    query: IValue[str]
+
+    def __attrs_post_init__(self):
+        assert STRING.can_accept(self.query.get_return_type())
 
     async def __call__(self, context: Context) -> bool:
-        query = context.render_template(self.query)
+        query = self.query.evaluate(context)
         async with aiohttp.ClientSession() as session:
             response = await session.get(f'{OPENDOTA_API_URL}{query}', params={
                 'api_key': self.api_key,
@@ -126,20 +154,27 @@ class CountMatchupsAction:
 
 
 @dataclass
-class GeneratePhraseAction:
+class GeneratePhraseForPlayer:
     phrase_generator: PhraseGenerator
+    match_player: IValue[Player]
+    result: IVariable
+    dota: Dota
+
+    def __attrs_post_init__(self):
+        assert DOTA_MATCH_PLAYER.can_accept(self.match_player.get_return_type())
+        assert self.result.get_return_type().can_accept(STRING)
 
     async def __call__(self, context: Context) -> bool:
-        match = context.local.get('result')
-        if not match:
-            return False
+        player = self.match_player.evaluate(context)
+        hero_name = self.dota.hero_id_to_localized_name(player.hero_id)
+        match_data = spec.dump(player)  # backwards compatibility
 
         phrase = self.phrase_generator.generate_phrase(
-            match=match[0],
+            match=match_data,
             player_name=context.author.member.display_name,
-            hero_name=context.render_template('{{ result[0].hero_id|dota_hero_id_to_localized_name }}')
+            hero_name=hero_name
         )
-        context.local['phrase'] = phrase
+        context.set_variable(self.result, phrase)
         return True
 
 
@@ -158,13 +193,277 @@ def _parse_steam_id(message: str) -> Optional[str]:
     return None
 
 
-def parse_steam_id_from_message(target_variable: str):
+def parse_steam_id_from_message(target_variable: IVariable[int]):
+    assert target_variable.get_return_type().can_accept(NUMBER)
+
     async def _fn(context: Context):
         steam_id = _parse_steam_id(str(context.message.content))
 
         if not steam_id:
             return False
 
-        context.local[target_variable] = steam_id
+        try:
+            steam_id = int(steam_id)
+        except ValueError:
+            return False
+
+        context.set_variable(target_variable, steam_id)
         return True
     return _fn
+
+
+@dataclass
+class FetchLastMatchId:
+    api: OpenDotaApi
+    steam_id: IValue[int]
+    result: IVariable[int]
+
+    def __attrs_post_init__(self):
+        assert NUMBER.can_accept(self.steam_id.get_return_type())
+        assert self.result.get_return_type().can_accept(NUMBER)
+
+    async def __call__(self, context: Context) -> bool:
+        steam_id = self.steam_id.evaluate(context)
+        if not steam_id:
+            return False
+
+        matches = await self.api.get_player_recent_matches(steam_id)
+        if not matches:
+            return False
+
+        last_match = matches[0]
+        context.set_variable(self.result, last_match.match_id)
+        return True
+
+
+@dataclass
+class CheckSecondsSinceRecentMatchGreaterThan:
+    api: OpenDotaApi
+    steam_id: IValue[int]
+    seconds: IValue[int]
+
+    def __attrs_post_init__(self):
+        assert NUMBER.can_accept(self.steam_id.get_return_type())
+        assert NUMBER.can_accept(self.seconds.get_return_type())
+
+    async def __call__(self, context: Context) -> bool:
+        steam_id = self.steam_id.evaluate(context)
+        if not steam_id:
+            return False
+
+        matches = await self.api.get_player_recent_matches(steam_id)
+        if matches is None:
+            return False
+
+        if len(matches) == 0:
+            return True
+
+        last_match = matches[0]
+        end_time = last_match.start_time + last_match.duration
+        threshold = self.seconds.evaluate(context)
+        return time.time() - end_time > threshold
+
+
+@dataclass
+class RequestMatch:
+    api: OpenDotaApi
+    match_id: IValue[int]
+    result: IVariable[DotaMatch]
+    use_cached_if_younger_than: float = 24 * 60 * 60
+
+    def __attrs_post_init__(self):
+        assert NUMBER.can_accept(self.match_id.get_return_type())
+        assert self.result.get_return_type().can_accept(DOTA_MATCH)
+
+    async def __call__(self, context: Context) -> bool:
+        match_id = self.match_id.evaluate(context)
+        if not match_id:
+            return False
+
+        match = await self.api.get_match(match_id, cache_lifetime=self.use_cached_if_younger_than)
+        context.set_variable(self.result, match)
+        return True
+
+
+@dataclass
+class CheckMatchIsParsed:
+    match: IValue[DotaMatch]
+
+    def __attrs_post_init__(self):
+        assert DOTA_MATCH.can_accept(self.match.get_return_type())
+
+    async def __call__(self, context: Context) -> bool:
+        match = self.match.evaluate(context)
+
+        if match.radiant_gold_adv is None:
+            # Missing field that is available only after match is parsed completely
+            return False
+
+        return True
+
+
+@dataclass
+class RequestParseMatch:
+    api: OpenDotaApi
+    match_id: IValue[int]
+    result_job_id: Optional[IVariable[int]] = None
+
+    def __attrs_post_init__(self):
+        assert NUMBER.can_accept(self.match_id.get_return_type())
+        if self.result_job_id:
+            assert self.result_job_id.get_return_type().can_accept(NUMBER)
+
+    async def __call__(self, context: Context) -> bool:
+        match_id = self.match_id.evaluate(context)
+        job = await self.api.request_match_parse(match_id)
+
+        if self.result_job_id is not None:
+            context.set_variable(self.result_job_id, job.job.jobId)
+        return True
+
+
+@dataclass
+class CalculateMedals:
+    match: IValue[DotaMatch]
+    steam_id: IValue[int]
+    result: IVariable[List[str]]
+
+    def __attrs_post_init__(self):
+        assert NUMBER.can_accept(self.steam_id.get_return_type())
+        assert DOTA_MATCH.can_accept(self.match.get_return_type())
+        assert self.result.get_return_type().can_accept(ARRAY(STRING))
+
+    async def __call__(self, context: Context) -> bool:
+        steam_id = self.steam_id.evaluate(context)
+        match = self.match.evaluate(context)
+        player = find_player_by_steam_id(match, steam_id)
+
+        if not player:
+            # No player in that match
+            return False
+
+        medal_ids = []
+        for medal in PLAYER_MEDALS:
+            if medal.predicate.check(match, player):
+                medal_ids.append(medal.id)
+
+        context.set_variable(self.result, medal_ids)
+        return True
+
+
+@dataclass
+class FormattedMedals(IValue[str]):
+    medals_ids: IValue[List[str]]
+
+    def __attrs_post_init__(self):
+        assert ARRAY(STRING).can_accept(self.medals_ids.get_return_type())
+
+    def evaluate(self, context: Context) -> str:
+        result = ''
+        for medal_id in self.medals_ids.evaluate(context):
+            medal = PLAYER_MEDALS_DICT.get(medal_id)
+            if medal:
+                result += f'{medal.icon} **{medal.name}** *{medal.description}*\n'
+        return result
+
+    def get_return_type(self) -> IType:
+        return STRING
+
+
+@dataclass
+class HeroName(IValue[str]):
+    hero_id: IValue[int]
+    dota: Dota
+
+    def __attrs_post_init__(self):
+        assert NUMBER.can_accept(self.hero_id.get_return_type())
+
+    def evaluate(self, context: Context) -> str:
+        hero_id = self.hero_id.evaluate(context)
+        return self.dota.hero_id_to_localized_name(hero_id)
+
+    def get_return_type(self) -> IType:
+        return STRING
+
+
+@dataclass
+class MatchPlayer(IValue[Optional[Player]]):
+    match: IValue[DotaMatch]
+    steam_id: IValue[int]
+
+    def __attrs_post_init__(self):
+        assert DOTA_MATCH.can_accept(self.match.get_return_type())
+        assert NUMBER.can_accept(self.steam_id.get_return_type())
+
+    def evaluate(self, context: Context) -> Optional[Player]:
+        match = self.match.evaluate(context)
+        steam_id = self.steam_id.evaluate(context)
+        player = find_player_by_steam_id(match, steam_id)
+        return player
+
+    def get_return_type(self) -> IType:
+        return ONEOF(NULL_TYPE, DOTA_MATCH_PLAYER)
+
+
+@dataclass
+class PlayerHeroId(IValue[int]):
+    player: IValue[Player]
+
+    def __attrs_post_init__(self):
+        assert DOTA_MATCH_PLAYER.can_accept(self.player.get_return_type())
+
+    def evaluate(self, context: Context) -> int:
+        player = self.player.evaluate(context)
+        return player.hero_id
+
+    def get_return_type(self) -> IType:
+        return NUMBER
+
+
+@dataclass
+class MatchDurationMinutes(IValue[int]):
+    match: IValue[DotaMatch]
+
+    def __attrs_post_init__(self):
+        assert DOTA_MATCH.can_accept(self.match.get_return_type())
+
+    def evaluate(self, context: Context) -> int:
+        match = self.match.evaluate(context)
+        return round(match.duration / 60)
+
+    def get_return_type(self) -> IType:
+        return NUMBER
+
+
+@dataclass
+class MatchPlayerResultString(IValue[str]):
+    player: IValue[Player]
+
+    def __attrs_post_init__(self):
+        assert DOTA_MATCH_PLAYER.can_accept(self.player.get_return_type())
+
+    def evaluate(self, context: Context) -> str:
+        player = self.player.evaluate(context)
+        if player.isRadiant == player.radiant_win:
+            return 'Победа'
+        return 'Поражение'
+
+    def get_return_type(self) -> IType:
+        return STRING
+
+
+@dataclass
+class PlayerHeroIconUrl(IValue[str]):
+    player: IValue[Player]
+    dota: Dota
+
+    def __attrs_post_init__(self):
+        assert DOTA_MATCH_PLAYER.can_accept(self.player.get_return_type())
+
+    def evaluate(self, context: Context) -> str:
+        player = self.player.evaluate(context)
+        hero_name = self.dota.hero_id_to_name(player.hero_id)[14:]
+        return f'https://cdn.origin.steamstatic.com/apps/dota2/images/heroes/{hero_name}_icon.png'
+
+    def get_return_type(self) -> IType:
+        return STRING

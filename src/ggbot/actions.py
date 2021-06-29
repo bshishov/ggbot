@@ -1,4 +1,4 @@
-from typing import Optional, Any
+from typing import Optional, Dict, TypeVar
 import logging
 import asyncio
 import time
@@ -7,15 +7,19 @@ from dataclasses import dataclass
 import discord
 
 from ggbot.context import *
+from ggbot.btdata import Const
+from ggbot.bttypes import *
 
 
 __all__ = [
     'message_intent_is',
     'reply_to_message',
+    'reply_to_message2',
     'wait_for_message_from_user',
     'wait_for_message_from_user_with_intents',
     'wait_for_message_from_channel',
     'send_message_to_channel',
+    'send_message_to_channel2',
     'edit_last_answer',
     'SendEmbed',
     'add_reaction_to_reply_message',
@@ -184,6 +188,16 @@ def send_message_to_channel(msg: str):
     return _fn
 
 
+def send_message_to_channel2(msg: IValue[str]):
+    async def _fn(context: Context):
+        mst = msg.evaluate(context)
+        if msg:
+            answer_message = await context.message.channel.send(msg)
+            context.bot.last_answer = answer_message
+        return True
+    return _fn
+
+
 def reply_to_message(msg: str):
     async def _fn(context: Context):
         if msg:
@@ -193,6 +207,20 @@ def reply_to_message(msg: str):
                 answer_message = await context.message.channel.send(rendered)
             else:
                 answer_message = await context.message.reply(rendered)
+            context.bot.last_answer = answer_message
+        return True
+    return _fn
+
+
+def reply_to_message2(msg: IValue[str]):
+    async def _fn(context: Context):
+        value = msg.evaluate(context)
+        if value:
+            if isinstance(context.message.channel, discord.DMChannel):
+                # DM doesnt need reply
+                answer_message = await context.message.channel.send(value)
+            else:
+                answer_message = await context.message.reply(value)
             context.bot.last_answer = answer_message
         return True
     return _fn
@@ -229,61 +257,72 @@ def _fix_url(url: str):
     return url
 
 
+T = TypeVar('T')
+
+
+def _eval(x: Optional[IValue[T]], context: Context) -> Optional[T]:
+    if x:
+        return x.evaluate(context)
+
+
 @dataclass
 class SendEmbed:
-    title: str
-    type: str = 'rich'
-    description: Optional[str] = None
-    url: Optional[str] = None
-    thumbnail: Optional[str] = None
-    image: Optional[str] = None
-    footer: Optional[str] = None
-    fields: Optional[dict[str, Any]] = None
-    video_url: Optional[str] = None
-    video_height: Optional[str] = None
-    video_width: Optional[str] = None
+    title: IValue[str]
+    type: IValue[str] = Const(STRING, 'rich')
+    description: Optional[IValue[str]] = None
+    url: Optional[IValue[str]] = None
+    thumbnail: Optional[IValue[str]] = None
+    image: Optional[IValue[str]] = None
+    footer: Optional[IValue[str]] = None
+    fields: Optional[IValue[Dict[str, str]]] = None
+    video_url: Optional[IValue[str]] = None
+    video_height: Optional[IValue[str]] = None
+    video_width: Optional[IValue[str]] = None
 
     async def __call__(self, context: Context) -> bool:
-        title = context.render_template(self.title)
-        embed = discord.Embed(title=title, type=self.type)
+        title = self.title.evaluate(context)
+        embed_type = self.type.evaluate(context)
+        description = _eval(self.description, context)
+        url = _eval(self.url, context)
+        thumbnail = _eval(self.thumbnail, context)
+        image = _eval(self.image, context)
+        fields = _eval(self.fields, context)
+        footer = _eval(self.footer, context)
+        video_url = _eval(self.video_url, context)
+        video_height = _eval(self.video_height, context)
+        video_width = _eval(self.video_width, context)
 
-        if self.description:
-            embed.description = context.render_template(self.description)
+        embed = discord.Embed(title=title, type=embed_type)
 
-        if self.url:
-            url = context.render_template(self.url)
+        if description:
+            embed.description = description
+
+        if url:
             embed.url = _fix_url(url)
 
-        if self.thumbnail:
-            thumbnail = context.render_template(self.thumbnail)
+        if thumbnail:
             embed.set_thumbnail(url=_fix_url(thumbnail))
 
-        if self.image:
-            image = context.render_template(self.image)
+        if image:
             embed.set_image(url=_fix_url(image))
 
-        if self.fields:
-            for field_name, field_value in self.fields.items():
+        if fields:
+            for field_name, field_value in fields.items():
                 field_value = context.render_template(field_value)
                 field_name = context.render_template(field_name)
                 if field_name and field_value is not None:
                     embed.add_field(name=field_name, value=field_value)
 
-        if self.footer:
-            footer = context.render_template(self.footer)
-            if footer:
-                embed.set_footer(text=footer)
+        if footer:
+            embed.set_footer(text=footer)
 
-        if self.video_url:
-            video_url = context.render_template(self.footer)
+        if video_url:
             embed.video.url = _fix_url(video_url)
 
-            if self.video_height:
-                video_height = context.render_template(self.video_height)
+            if video_height:
                 embed.video.height = video_height
 
-            if self.video_width:
-                video_width = context.render_template(self.video_width)
+            if video_width:
                 embed.video.width = video_width
 
         await context.message.channel.send(embed=embed)

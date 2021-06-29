@@ -1,8 +1,9 @@
 from typing import Callable, Awaitable
 import asyncio
 import random
+import logging
 
-from ggbot.context import Context
+from ggbot.context import Context, IValue
 
 
 __all__ = [
@@ -21,10 +22,13 @@ __all__ = [
     'random_one_of',
     'do_action',
     'do_print',
-    'ask_input'
+    'ask_input',
+    'wait_time',
+    'log',
+    'log_value'
 ]
 
-
+_logger = logging.getLogger(__name__)
 Action = Callable[[Context], Awaitable[bool]]
 
 
@@ -165,4 +169,25 @@ def ask_input(to: str = 'input') -> Action:
             ctx.local[to] = value
             return True
         return False
+    return _fn
+
+
+def wait_time(seconds: float):
+    async def _fn(context: Context):
+        await asyncio.sleep(seconds)
+        return True
+    return _fn
+
+
+def log(message: str):
+    async def _fn(context: Context):
+        _logger.info(message)
+        return True
+    return _fn
+
+
+def log_value(value: IValue[str]):
+    async def _fn(context: Context):
+        _logger.info(value.evaluate(context))
+        return True
     return _fn

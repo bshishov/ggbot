@@ -94,7 +94,10 @@ async def main(config_filename: str = 'app.toml'):
     # Scenarios / handlers
     from ggbot.scenarios import HANDLERS as COMMON_HANDLERS
     from ggbot.dota.scenarios import create_dota_scenario_handlers
-    dota_handlers = create_dota_scenario_handlers(memory, dota)
+    from ggbot.opendota import OpenDotaApi
+
+    api = OpenDotaApi(dota.api_key)
+    dota_handlers = create_dota_scenario_handlers(memory, dota, api)
 
     handlers = {
         **COMMON_HANDLERS,
