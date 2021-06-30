@@ -38,6 +38,7 @@ __all__ = [
     'RequestParseMatch',
     'CalculateMedals',
     'FormattedMedals',
+    'MedalName',
     'HeroName',
     'MatchPlayer',
     'MatchDurationMinutes',
@@ -420,6 +421,24 @@ class FormattedMedals(IValue[str]):
             if medal:
                 result += f'{medal.icon} **{medal.name}** *{medal.description}*\n'
         return result
+
+    def get_return_type(self) -> IType:
+        return STRING
+
+
+@dataclass
+class MedalName(IValue[str]):
+    medal_id: IValue[str]
+
+    def __attrs_post_init__(self):
+        assert STRING.can_accept(self.medal_id.get_return_type())
+
+    def evaluate(self, context: Context) -> str:
+        medal_id = self.medal_id.evaluate(context)
+        medal = PLAYER_MEDALS_DICT.get(medal_id)
+        if medal:
+            return medal.name
+        return medal_id
 
     def get_return_type(self) -> IType:
         return STRING

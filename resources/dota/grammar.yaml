@@ -167,12 +167,14 @@ intent-list-medals:
   - какие бывают <medal>
   - список <medal>
 
-# intent-medals:
-#   - мои медали
-#   - мои медальки
-#   - мои ачивки
-#   - мои достижения
-#
-
 intent-last-match-medals:
   - <medal>
+
+intent-debug-my-medals:
+  - debugmymedals
+
+intent-debug-add-random-medal:
+  - debugmedaladd
+
+intent-debug-clear-medals:
+  - debugmedalclear

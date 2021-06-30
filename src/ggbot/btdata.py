@@ -1,4 +1,5 @@
-from typing import Dict, Union, TypeVar, Optional, List
+from typing import Dict, Union, TypeVar, Optional, List, Callable
+import random
 
 from attr import dataclass
 
@@ -9,10 +10,12 @@ from ggbot.context import Context, IVariable, IValue
 __all__ = [
     'Attr',
     'Const',
+    'Factory',
     'NULL',
     'TRUE',
     'FALSE',
     'StringDictionary',
+    'Item',
     'Template',
     'AsString',
     'Formatted',
@@ -21,10 +24,13 @@ __all__ = [
     'Fallback',
     'set_var_from',
     'Divided',
+    'Sum',
     'Rounded',
     'Filtered',
-    'Select',
-    'JoinedString'
+    'SelectFromArray',
+    'SelectFromMap',
+    'JoinedString',
+    'RandomElementOf'
 ]
 
 
@@ -40,6 +46,18 @@ class Const(IValue[TInternal]):
 
     def evaluate(self, ctx) -> TInternal:
         return self._value
+
+    def get_return_type(self) -> IType:
+        return self._type
+
+
+class Factory(IValue[TInternal]):
+    def __init__(self, tp: IType, value: Callable[[], TInternal]):
+        self._type = tp
+        self._value = value
+
+    def evaluate(self, ctx) -> TInternal:
+        return self._value()
 
     def get_return_type(self) -> IType:
         return self._type
@@ -82,6 +100,27 @@ class StringDictionary(IValue[Dict[str, str]]):
 
     def get_return_type(self) -> IType:
         return MAP(STRING, STRING)
+
+
+@dataclass(frozen=True)
+class Item(IValue[Optional[TVar]]):
+    map: IValue[Dict[str, TVar]]
+    key: IValue[str]
+
+    def __attrs_post_init__(self):
+        map_type = self.map.get_return_type()
+        assert isinstance(map_type, MAP)
+        map_type.get_key_type().can_accept(self.key.get_return_type())
+
+    def evaluate(self, context: Context) -> Optional[TVar]:
+        v_map = self.map.evaluate(context)
+        v_key = self.key.evaluate(context)
+        return v_map.get(v_key)
+
+    def get_return_type(self) -> IType:
+        map_type = self.map.get_return_type()
+        assert isinstance(map_type, MAP)
+        return ONEOF(map_type.get_value_type(), NULL_TYPE)
 
 
 @dataclass(frozen=True)
@@ -199,6 +238,22 @@ class Divided(IValue[float]):
 
 
 @dataclass(frozen=True)
+class Sum(IValue[float]):
+    a: Union[IValue[float], IValue[int]]
+    b: Union[IValue[float], IValue[int]]
+
+    def __attrs_post_init__(self):
+        assert NUMBER.can_accept(self.a.get_return_type())
+        assert NUMBER.can_accept(self.b.get_return_type())
+
+    def evaluate(self, context: Context) -> float:
+        return self.a.evaluate(context) + self.b.evaluate(context)
+
+    def get_return_type(self) -> IType:
+        return NUMBER
+
+
+@dataclass(frozen=True)
 class Rounded(IValue[int]):
     a: Union[IValue[float]]
 
@@ -235,7 +290,7 @@ class Filtered(IValue[List[T]]):
 
 
 @dataclass
-class Select(IValue[List[TResult]]):
+class SelectFromArray(IValue[List[TResult]]):
     collection: IValue[List[T]]
     x: IVariable[T]  # local var
     fn: IValue[TResult]
@@ -247,6 +302,29 @@ class Select(IValue[List[TResult]]):
         result = []
         for item in self.collection.evaluate(context):
             context.set_variable(self.x, item)  # VIOLATES PURE FUNCTIONS!
+            result.append(self.fn.evaluate(context))
+        return result
+
+    def get_return_type(self) -> IType:
+        return ARRAY(self.fn.get_return_type())
+
+
+@dataclass
+class SelectFromMap(IValue[List[TResult]]):
+    collection: IValue[Dict[T, TVar]]
+    key: IVariable[T]
+    value: IVariable[TVar]
+    fn: IValue[TResult]
+
+    def __attrs_post_init__(self):
+        map_type = MAP(self.key.get_return_type(), self.value.get_return_type())
+        assert self.collection.get_return_type().can_accept(map_type)
+
+    def evaluate(self, context: Context) -> List[TResult]:
+        result = []
+        for k, v in self.collection.evaluate(context).items():
+            context.set_variable(self.key, k)  # VIOLATES PURE FUNCTIONS!
+            context.set_variable(self.value, v)  # VIOLATES PURE FUNCTIONS!
             result.append(self.fn.evaluate(context))
         return result
 
@@ -268,3 +346,22 @@ class JoinedString(IValue[str]):
 
     def get_return_type(self) -> IType:
         return STRING
+
+
+@dataclass
+class RandomElementOf(IValue[Optional[TVar]]):
+    collection: IValue[List[TVar]]
+
+    def __attrs_post_init__(self):
+        assert isinstance(self.collection.get_return_type(), ARRAY)
+
+    def evaluate(self, context: Context) -> Optional[TVar]:
+        collection = self.collection.evaluate(context)
+        if len(collection) > 0:
+            return random.choice(collection)
+        return None
+
+    def get_return_type(self) -> IType:
+        collection_type = self.collection.get_return_type()
+        assert isinstance(collection_type, ARRAY)
+        return ONEOF(NULL_TYPE, collection_type.get_item_type())

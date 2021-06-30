@@ -1,9 +1,10 @@
-from typing import Callable, Awaitable
+from typing import Callable, Awaitable, TypeVar, Dict
 import asyncio
 import random
 import logging
 
-from ggbot.context import Context, IValue
+from ggbot.context import Context, IValue, IVariable
+from ggbot.bttypes import *
 
 
 __all__ = [
@@ -25,7 +26,8 @@ __all__ = [
     'ask_input',
     'wait_time',
     'log',
-    'log_value'
+    'log_value',
+    'set_value_in_map'
 ]
 
 _logger = logging.getLogger(__name__)
@@ -189,5 +191,26 @@ def log(message: str):
 def log_value(value: IValue[str]):
     async def _fn(context: Context):
         _logger.info(value.evaluate(context))
+        return True
+    return _fn
+
+
+TKey = TypeVar('TKey')
+TValue = TypeVar('TValue')
+
+
+def set_value_in_map(
+        var: IVariable[Dict[TKey, TValue]],
+        key: IValue[TKey],
+        value: IValue[TValue]
+) -> Action:
+    assert var.get_return_type().can_accept(MAP(key.get_return_type(), value.get_return_type()))
+
+    async def _fn(ctx: Context):
+        m = ctx.get_var_value(var)
+        v_key = key.evaluate(ctx)
+        v_value = value.evaluate(ctx)
+        m[v_key] = v_value
+        ctx.set_variable(var, m)
         return True
     return _fn

@@ -111,6 +111,9 @@ class _ArrayType(IType):
     def __init__(self, item_type: IType):
         self._item_type = item_type
 
+    def get_item_type(self) -> IType:
+        return self._item_type
+
     def get_name(self) -> str:
         return f'Array<{self._item_type.get_name()}>'
 
@@ -130,6 +133,12 @@ class _MapType(IType):
     def get_name(self) -> str:
         return f'Map<{self._k_type.get_name()}, {self._v_type.get_name()}>'
 
+    def get_key_type(self) -> IType:
+        return self._k_type
+
+    def get_value_type(self) -> IType:
+        return self._v_type
+
     def can_accept(self, other: 'IType') -> bool:
         if isinstance(other, _MapType):
             return (
@@ -142,8 +151,8 @@ class _MapType(IType):
 class _StructType(IType):
     __slots__ = '_name', '_attributes'
 
-    def __init__(self, name: str, **attributes: IType):
-        self._name = name
+    def __init__(self, __struct_name: str, **attributes: IType):
+        self._name = __struct_name
         self._attributes = attributes
 
     def get_name(self) -> str:

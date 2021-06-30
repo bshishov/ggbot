@@ -92,7 +92,7 @@ def create_dota_scenario_handlers(
                 "Твои топ герои: {heroes}",
                 heroes=JoinedString(
                     " ",
-                    Select(rankings, _ranking, Formatted(
+                    SelectFromArray(rankings, _ranking, Formatted(
                         "`{name}`",
                         name=HeroName(Attr(_ranking, 'hero_id'), dota),
                         score=AsString(Rounded(Attr(_ranking, 'score')))
@@ -205,7 +205,7 @@ def create_dota_scenario_handlers(
             Formatted(
                 "Против {hero} подойдут:\n{heroes}",
                 hero=HeroName(NumberSlotValue('hero_id'), dota),
-                heroes=JoinedString("\n", Select(matchups, m, matchup_string))
+                heroes=JoinedString("\n", SelectFromArray(matchups, m, matchup_string))
             )
         )
     )
@@ -299,6 +299,80 @@ def create_dota_scenario_handlers(
         )
     )
 
+    user_medals = Variable('user_medals', MAP(STRING, NUMBER))
+    #user_medals_matches = Variable('user_medals_matches', ARRAY(NUMBER))
+    _medal_name = Variable('_medal_name', STRING)
+    _medal_count = Variable('_medal_count', NUMBER)
+    _medal_to_add = Variable('_medal_to_add', STRING)
+
+    all_medals = Const(ARRAY(STRING), list(PLAYER_MEDALS_DICT.keys()))
+
+    load_or_create_medals = selector(
+        sequence(
+            log("Загружаем медальки из памяти"),
+            memory.check_user_var_exists(user_medals.get_name()),
+            memory.copy_user_var_to_local(user_medals.get_name(), user_medals.get_name())
+        ),
+        sequence(
+            log("Создаем пустые медальки"),
+            set_var_from(user_medals, Factory(MAP(STRING, NUMBER), dict))
+        )
+    )
+    save_medals = sequence(
+        log("Сохраняем медальки"),
+        memory.set_user_var_from(user_medals.get_name(), user_medals)
+    )
+
+    intent_debug_add_random_medal = sequence(
+        load_or_create_medals,
+        set_var_from(
+            _medal_to_add,
+            Fallback(STRING, RandomElementOf(all_medals), Const(STRING, ""))
+        ),
+        set_value_in_map(
+            user_medals,
+            _medal_to_add,
+            Sum(Fallback(NUMBER, Item(user_medals, _medal_to_add), Const(NUMBER, 0)), Const(NUMBER, 1))
+        ),
+        send_message_to_channel2(
+            Formatted(
+                "Добавил медальку `{medal}`",
+                medal=_medal_to_add
+            )
+        ),
+        save_medals
+    )
+
+    intent_debug_clear_medals = sequence(
+        load_or_create_medals,
+        log("Пересоздаем медальки"),
+        set_var_from(user_medals, Factory(MAP(STRING, NUMBER), dict)),
+        send_message_to_channel("Все, твоих медалей больше нет!"),
+        save_medals
+    )
+
+    intent_debug_my_medals = sequence(
+        load_or_create_medals,
+        send_message_to_channel2(
+            Formatted(
+                "Твои медали:\n{medals}",
+                medals=JoinedString(
+                    "\n",
+                    SelectFromMap(
+                        collection=user_medals,
+                        key=_medal_name,
+                        value=_medal_count,
+                        fn=Formatted(
+                            "**{name}** *{count}*",
+                            name=MedalName(_medal_name),
+                            count=_medal_count
+                        )
+                    )
+                )
+            )
+        )
+    )
+
     return {
         'intent-dotabuff': ScenarioHandler(intent_my_dotabuff),
         'intent-my-mmr': ScenarioHandler(intent_my_mmr),
@@ -306,5 +380,9 @@ def create_dota_scenario_handlers(
         'intent-my-last-match': ScenarioHandler(intent_my_last_match),
         'intent-dota-pick-against': ScenarioHandler(intent_dota_pick_against),
         'intent-list-medals': ScenarioHandler(intent_list_medals),
-        'intent-last-match-medals': ScenarioHandler(intent_last_match_medals)
+        'intent-last-match-medals': ScenarioHandler(intent_last_match_medals),
+
+        "intent-debug-add-random-medal": ScenarioHandler(intent_debug_add_random_medal),
+        "intent-debug-clear-medals": ScenarioHandler(intent_debug_clear_medals),
+        "intent-debug-my-medals": ScenarioHandler(intent_debug_my_medals),
     }

@@ -190,9 +190,9 @@ def send_message_to_channel(msg: str):
 
 def send_message_to_channel2(msg: IValue[str]):
     async def _fn(context: Context):
-        mst = msg.evaluate(context)
-        if msg:
-            answer_message = await context.message.channel.send(msg)
+        message = msg.evaluate(context)
+        if message:
+            answer_message = await context.message.channel.send(message)
             context.bot.last_answer = answer_message
         return True
     return _fn
