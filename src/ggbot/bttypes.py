@@ -14,7 +14,7 @@ __all__ = [
     'ARRAY',
     'MAP',
     'STRUCT',
-    'BOOL',
+    'BOOLEAN',
     'ANY',
     'make_struct_from_python_type'
 ]
@@ -43,7 +43,7 @@ class IType(Generic[TInternal], metaclass=ABCMeta):
 
 class _NumberType(IType[Decimal]):
     def get_name(self) -> str:
-        return 'Numeric'
+        return 'Number'
 
     def can_accept(self, other: IType) -> bool:
         return isinstance(other, _NumberType)
@@ -164,7 +164,7 @@ class _StructType(IType):
 NUMBER = _NumberType()
 STRING = _StringType()
 NULL_TYPE = _NullType()
-BOOL = _BooleanType()
+BOOLEAN = _BooleanType()
 ANY = _AnyType()
 ONEOF = _make_oneof
 ARRAY = _ArrayType
@@ -178,7 +178,7 @@ def _resolve_type_from_py_annotation(annotation) -> IType:
     elif annotation in {int, float, Decimal}:
         return NUMBER
     elif annotation == bool:
-        return BOOL
+        return BOOLEAN
     elif annotation is type(None):
         return NULL_TYPE
 

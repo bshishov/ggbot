@@ -12,7 +12,7 @@ __all__ = [
     'NULL',
     'StringDictionary',
     'Template',
-    'ToStr',
+    'AsString',
     'Formatted',
     'SlotValue',
     'Fallback',
@@ -84,7 +84,7 @@ class Template(IValue[str]):
 
 
 @dataclass(frozen=True)
-class ToStr(IValue[str]):
+class AsString(IValue[str]):
     value: IValue
 
     def evaluate(self, context: Context) -> str:

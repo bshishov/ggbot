@@ -156,7 +156,7 @@ def create_dota_scenario_handlers(
                         )
                     )
                 ),
-                ":creep: Добито крипов": ToStr(Attr(match_player, 'last_hits'))
+                ":creep: Добито крипов": AsString(Attr(match_player, 'last_hits'))
             })
         )
     )
