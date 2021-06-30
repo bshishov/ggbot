@@ -253,14 +253,14 @@ PLAYER_MEDALS = [
         name='Мудреныч',
         icon='🤓',
         description='Набрать более 20 стаков на сайленсере',
-        predicate=PermanentBuffStacksMoreThan(buff_id=3, stacks=20),  # silencer_glaives_of_wisdom
+        predicate=PermanentBuffStacksMoreThan(buff_id=3, stacks=60),  # silencer_glaives_of_wisdom
     ),
     PlayerMedal(
         id='lots_of_pudge_stacks',
         name='Жиртрест',
         icon='🥩',
         description='Набрать более 20 стаков на пудже',
-        predicate=PermanentBuffStacksMoreThan(buff_id=4, stacks=20),  # pudge_flesh_heap
+        predicate=PermanentBuffStacksMoreThan(buff_id=4, stacks=30),  # pudge_flesh_heap
     ),
     PlayerMedal(
         id='lots_of_buybacks',

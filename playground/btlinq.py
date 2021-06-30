@@ -44,48 +44,6 @@ class Doubled(IValue[Union[int, float]]):
         return NUMBER
 
 
-@dataclass
-class Filtered(IValue[List[T]]):
-    collection: IValue[List[T]]
-    x: IVariable[T]  # local var
-    fn: IValue[T]
-
-    def __attrs_post_init__(self):
-        assert self.collection.get_return_type().can_accept(ARRAY(self.x.get_return_type()))
-        assert BOOLEAN.can_accept(self.fn.get_return_type())
-
-    def evaluate(self, context: Context) -> List[T]:
-        result = []
-        for item in self.collection.evaluate(context):
-            context.set_variable(self.x, item)  # VIOLATES PURE FUNCTIONS!
-            if self.fn.evaluate(context):
-                result.append(item)
-        return result
-
-    def get_return_type(self) -> IType:
-        return ARRAY(self.x.get_return_type())
-
-
-@dataclass
-class Select(IValue[List[TResult]]):
-    collection: IValue[List[T]]
-    x: IVariable[T]  # local var
-    fn: IValue[TResult]
-
-    def __attrs_post_init__(self):
-        assert self.collection.get_return_type().can_accept(ARRAY(self.x.get_return_type()))
-
-    def evaluate(self, context: Context) -> List[TResult]:
-        result = []
-        for item in self.collection.evaluate(context):
-            context.set_variable(self.x, item)  # VIOLATES PURE FUNCTIONS!
-            result.append(self.fn.evaluate(context))
-        return result
-
-    def get_return_type(self) -> IType:
-        return ARRAY(self.fn.get_return_type())
-
-
 def main():
     ctx = Context(None, None, None)
 

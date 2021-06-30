@@ -12,7 +12,7 @@ from ggbot.context import BotContext, Context, IVariable, IValue
 from ggbot.component import BotComponent
 from ggbot.assets import *
 from ggbot.utils import local_time_cache
-from ggbot.opendota import OpenDotaApi, DotaMatch, Player
+from ggbot.opendota import OpenDotaApi, DotaMatch, Player, PlayerRanking, HeroMatchup
 from ggbot.dota.phrases import PhraseGenerator
 from ggbot.dota.medals import *
 from ggbot.dota.predicates import find_player_by_steam_id
@@ -22,9 +22,13 @@ from ggbot.bttypes import *
 __all__ = [
     'DOTA_MATCH',
     'DOTA_MATCH_PLAYER',
+    'DOTA_PLAYER_RANKING',
+    'DOTA_HERO_MATCHUP',
     'OPENDOTA_API_URL',
     'Dota',
     'RequestOpenDotaAction',
+    'RequestPlayerRankings',
+    'RequestTopHeroMatchups',
     'CountMatchupsAction',
     'GeneratePhraseForPlayer',
     'parse_steam_id_from_message',
@@ -55,6 +59,8 @@ SKILL_BRACKETS = {
 OPENDOTA_API_URL = 'https://api.opendota.com/api/'
 DOTA_MATCH = make_struct_from_python_type(DotaMatch)
 DOTA_MATCH_PLAYER = make_struct_from_python_type(Player)
+DOTA_PLAYER_RANKING = make_struct_from_python_type(PlayerRanking)
+DOTA_HERO_MATCHUP = make_struct_from_python_type(HeroMatchup)
 
 
 def skill_id_to_name(skill_id: str) -> str:
@@ -233,6 +239,55 @@ class FetchLastMatchId:
 
         last_match = matches[0]
         context.set_variable(self.result, last_match.match_id)
+        return True
+
+
+@dataclass
+class RequestPlayerRankings:
+    api: OpenDotaApi
+    steam_id: IValue[int]
+    result: IVariable[List[PlayerRanking]]
+    limit: int
+
+    def __attrs_post_init__(self):
+        assert NUMBER.can_accept(self.steam_id.get_return_type())
+        assert self.result.get_return_type().can_accept(ARRAY(DOTA_PLAYER_RANKING))
+
+    async def __call__(self, context: Context) -> bool:
+        steam_id = self.steam_id.evaluate(context)
+        rankings = await self.api.get_player_rankings(steam_id)
+        rankings = sorted(rankings, key=lambda ranking: ranking.percent_rank, reverse=False)
+        context.set_variable(self.result, rankings[:self.limit])
+        return True
+
+
+def _win_rate(m: HeroMatchup) -> float:
+    return m.wins / m.games_played
+
+
+@dataclass
+class RequestTopHeroMatchups:
+    api: OpenDotaApi
+    hero_id: IValue[int]
+    result: IVariable[List[HeroMatchup]]
+    limit: int
+
+    def __attrs_post_init__(self):
+        assert NUMBER.can_accept(self.hero_id.get_return_type())
+        assert self.result.get_return_type().can_accept(ARRAY(DOTA_HERO_MATCHUP))
+
+    async def __call__(self, context: Context) -> bool:
+        hero_id = self.hero_id.evaluate(context)
+        result = await self.api.get_hero_matchups(hero_id)
+
+        total_games_played = 0
+        for matchup in result:
+            total_games_played += matchup.games_played
+
+        avg_games_played = total_games_played / len(result)
+        result = (x for x in result if x.games_played >= avg_games_played)
+        result = list(sorted(result, key=_win_rate, reverse=True))[:self.limit]
+        context.set_variable(self.result, result)
         return True
 
 

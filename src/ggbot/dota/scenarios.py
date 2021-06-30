@@ -27,6 +27,7 @@ def create_dota_scenario_handlers(
     match_player = Variable('match_player', DOTA_MATCH_PLAYER)
     medal_ids = Variable('medal_ids', ARRAY(STRING))
     phrase = Variable('phrase', STRING)
+    rankings = Variable('rankings', ARRAY(DOTA_PLAYER_RANKING))
     steam_id_user_var = 'steam_id'
 
     request_dotabuff_from_user = selector(
@@ -59,7 +60,12 @@ def create_dota_scenario_handlers(
 
     intent_my_dotabuff = sequence(
         require_dotabuff,
-        reply_to_message("https://www.dotabuff.com/players/{{ steam_id }}")
+        reply_to_message2(
+            Formatted(
+                "https://www.dotabuff.com/players/{steam_id}",
+                steam_id=steam_id
+            )
+        )
     )
 
     intent_my_mmr = sequence(
@@ -72,22 +78,38 @@ def create_dota_scenario_handlers(
         reply_to_message("Твой ммр по версии opendota: {{ result.mmr_estimate.estimate }}")
     )
 
+    _ranking = Variable('_ranking', DOTA_PLAYER_RANKING)
     intent_my_best_heroes = sequence(
         require_dotabuff,
-        RequestOpenDotaAction(
-            api_key=dota.api_key,
-            query=Formatted("players/{steam_id}/rankings", steam_id=steam_id)
+        RequestPlayerRankings(
+            api=api,
+            steam_id=steam_id,
+            result=rankings,
+            limit=6
         ),
-        reply_to_message("""Топ герои:
-        {% for hero in (result|sort(attribute='score', reverse=False))[:5] %}
-        * {{ hero.hero_id|dota_hero_id_to_localized_name }}{% endfor %}""")
+        reply_to_message2(
+            Formatted(
+                "Твои топ герои: {heroes}",
+                heroes=JoinedString(
+                    " ",
+                    Select(rankings, _ranking, Formatted(
+                        "`{name}`",
+                        name=HeroName(Attr(_ranking, 'hero_id'), dota),
+                        score=AsString(Rounded(Attr(_ranking, 'score')))
+                    ))
+                )
+            )
+        )
     )
 
     intent_my_last_match = sequence(
         require_dotabuff,
         FetchLastMatchId(api=api, steam_id=steam_id, result=last_match_id),
         RequestMatch(api=api, match_id=last_match_id, result=last_match),
-        set_var_from(var=match_player, value=MatchPlayer(match=last_match, steam_id=steam_id)),
+        set_var_from(
+            var=match_player,
+            value=MatchPlayer(match=last_match, steam_id=steam_id)
+        ),
         GeneratePhraseForPlayer(
             phrase_generator=dota.phrase_generator,
             match_player=match_player,
@@ -153,18 +175,39 @@ def create_dota_scenario_handlers(
         )
     )
 
-    intent_dota_pick_against = sequence(
-        RequestOpenDotaAction(
-            api_key=dota.api_key,
-            query=Formatted(
-                "players/{hero_id}/matchups",
-                hero_id=SlotValue('hero_id')
+    matchups = Variable('matchups', ARRAY(DOTA_HERO_MATCHUP))
+    m = Variable('_matchup', DOTA_HERO_MATCHUP)
+
+    matchup_string = Formatted(
+        "{hero} ({winrate}%)",
+        hero=HeroName(Attr(m, 'hero_id'), dota),
+        winrate=AsString(
+            Rounded(
+                Divided(
+                    Divided(
+                        Attr(m, 'wins'),
+                        Attr(m, 'games_played')
+                    ),
+                    Const(NUMBER, 0.01)
+                )
             )
+        )
+    )
+
+    intent_dota_pick_against = sequence(
+        RequestTopHeroMatchups(
+            api=api,
+            hero_id=NumberSlotValue('hero_id'),
+            result=matchups,
+            limit=6
         ),
-        CountMatchupsAction(),
-        reply_to_message("""Против {{ match.slots.hero_id|dota_hero_id_to_localized_name }} неплохо заходят:
-        {% for hero in result[:5] %}{{ hero.hero_id|dota_hero_id_to_localized_name }} ({{ '{0:0.1f}'.format(hero.winrate * 100) }}%)
-        {% endfor %}""")
+        reply_to_message2(
+            Formatted(
+                "Против {hero} подойдут:\n{heroes}",
+                hero=HeroName(NumberSlotValue('hero_id'), dota),
+                heroes=JoinedString("\n", Select(matchups, m, matchup_string))
+            )
+        )
     )
 
     intent_list_medals = reply_to_message2(

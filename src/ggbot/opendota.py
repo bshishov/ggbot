@@ -1,4 +1,4 @@
-from typing import Union, Literal, Dict, List, Optional, Type
+from typing import Union, Literal, Dict, List, Optional
 import aiohttp
 
 from attr import dataclass
@@ -10,6 +10,8 @@ from spec import spec
 __all__ = [
     'DotaMatch',
     'Player',
+    'PlayerRanking',
+    'HeroMatchup',
     'DotaItem',
     'DotaItemAttrib',
     'get_items',
@@ -18,7 +20,7 @@ __all__ = [
 ]
 
 
-OPEN_DOTA_API_URL = 'https://api.opendota.com/api/'
+OPEN_DOTA_API_URL = 'https://api.opendota.com/api'
 StrOrInt = Union[str, int]
 
 
@@ -349,7 +351,7 @@ class DotaMatch:
 
 
 @dataclass(slots=True, frozen=True)
-class DotaRecentMatch:
+class PlayerRecentMatch:
     match_id: int
     player_slot: int
     radiant_win: bool
@@ -414,6 +416,21 @@ class DotaItem:
     charges: Union[bool, int] = False
 
 
+@dataclass(slots=True, frozen=True)
+class PlayerRanking:
+    hero_id: int
+    score: float
+    percent_rank: float
+    card: int
+
+
+@dataclass(slots=True, frozen=True)
+class HeroMatchup:
+    hero_id: int
+    games_played: int
+    wins: int
+
+
 async def get_items() -> Dict[str, DotaItem]:
     data = await get_url_json_with_file_cache(
         'https://raw.githubusercontent.com/odota/dotaconstants/master/build/items.json'
@@ -455,14 +472,34 @@ class OpenDotaApi:
         )
         return spec.load(DotaMatch, data)
 
-    async def get_player_recent_matches(self, account_id: StrOrInt) -> List[DotaRecentMatch]:
+    async def get_player_recent_matches(self, account_id: StrOrInt) -> List[PlayerRecentMatch]:
         """GET /players/{account_id}/recentMatches
 
          https://docs.opendota.com/#tag/players%2Fpaths%2F~1players~1%7Baccount_id%7D~1recentMatches%2Fget
         """
         url = f'{OPEN_DOTA_API_URL}/players/{account_id}/recentMatches'
         data = await get_url_json_with_file_cache(url, params=self._params, lifetime=5 * 60)
-        return spec.load(List[DotaRecentMatch], data)
+        return spec.load(List[PlayerRecentMatch], data)
+
+    async def get_player_rankings(self, account_id: StrOrInt) -> List[PlayerRanking]:
+        """GET /players/{account_id}/recentMatches
+
+         https://docs.opendota.com/#tag/players%2Fpaths%2F~1players~1%7Baccount_id%7D~1recentMatches%2Fget
+         https://blog.opendota.com/2016/09/30/explaining-rankings/
+        """
+        url = f'{OPEN_DOTA_API_URL}/players/{account_id}/rankings'
+        data = await get_url_json_with_file_cache(url, params=self._params, lifetime=5 * 60 * 60)
+        return spec.load(List[PlayerRanking], data)
+
+    async def get_hero_matchups(self, hero_id: StrOrInt) -> List[HeroMatchup]:
+        """GET /heroes/{hero_id}/matchups
+
+         https://docs.opendota.com/#tag/heroes%2Fpaths%2F~1heroes~1%7Bhero_id%7D~1matchups%2Fget
+         https://blog.opendota.com/2016/09/30/explaining-rankings/
+        """
+        url = f'{OPEN_DOTA_API_URL}/heroes/{hero_id}/matchups'
+        data = await get_url_json_with_file_cache(url, params=self._params, lifetime=3 * 24 * 60 * 60)
+        return spec.load(List[HeroMatchup], data)
 
     async def request_match_parse(self, match_id: StrOrInt) -> JobStatus:
         """POST /request/{match_id}
