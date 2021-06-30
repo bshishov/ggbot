@@ -113,8 +113,7 @@ def create_dota_scenario_handlers(
                     "{minutes} минут",
                     minutes=MatchDurationMinutes(last_match)
                 ),
-                match_id=last_match_id,
-                medals=FormattedMedals(medal_ids)
+                match_id=last_match_id
             ),
             thumbnail=PlayerHeroIconUrl(match_player, dota),
             fields=StringDictionary({
