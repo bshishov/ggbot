@@ -16,13 +16,6 @@ __all__ = [
 ]
 
 
-def _medals_message() -> str:
-    msg = 'Медали:\n'
-    for medal in PLAYER_MEDALS:
-        msg += f'{medal.icon} {medal.name}\n'
-    return msg
-
-
 def create_dota_scenario_handlers(
         memory: Memory,
         dota: Dota,
@@ -174,7 +167,11 @@ def create_dota_scenario_handlers(
         {% endfor %}""")
     )
 
-    intent_list_medals = reply_to_message(_medals_message())
+    intent_list_medals = reply_to_message2(
+        FormattedMedals(
+            Const(ARRAY(STRING), list(PLAYER_MEDALS_DICT.keys()))
+        )
+    )
 
     intent_last_match_medals = sequence(
         require_dotabuff,
