@@ -419,6 +419,60 @@ def create_dota_scenario_handlers(
         )
     )
 
+    intent_debug_calc_medals = sequence(
+        require_steam_id(memory, steam_id),
+        load_or_create_medals(memory, user_medals, user_medals_matches),
+        set_var_from(last_match_id, NumberSlotValue('match_id')),
+        log_value(Formatted("Разбираем ачивки матча {match}", match=last_match_id)),
+        selector(
+            RequestMatch(
+                api=api,
+                match_id=last_match_id,
+                result=last_match,
+                use_cached_if_younger_than=60 * 60
+            ),
+            always_fail(
+                send_message_to_channel(
+                    "Не удалось запросить инфу о матче"
+                )
+            ),
+        ),
+        selector(
+            CheckMatchIsParsed(last_match),
+            always_fail(
+                send_message_to_channel(
+                    "Этот матч не распаршен, зайди на опендоту и кликни анализ повтора"
+                )
+            )
+        ),
+        RequestMatch(api=api, match_id=last_match_id, result=last_match),
+        set_var_from(var=match_player, value=MatchPlayer(match=last_match, steam_id=steam_id)),
+        CalculateMedals(match=last_match, steam_id=steam_id, result=match_medals),
+        selector(
+            sequence(
+                AssignPlayerMedals(
+                    match_medals=match_medals,
+                    match_id=last_match_id,
+                    player_medal_matches=user_medals_matches,
+                    player_medals=user_medals
+                ),
+                save_medals(memory, user_medals, user_medals_matches),
+            ),
+            always_fail(
+                send_message_to_channel(
+                    "За этот матч тебе уже давали ачивки"
+                )
+            )
+        ),
+        send_message_to_channel2(
+            Formatted(
+                "Добавил медальки за матч {match}:\n{medals}",
+                match=last_match_id,
+                medals=FormattedMedals(match_medals)
+            )
+        )
+    )
+
     return {
         'intent-dotabuff': ScenarioHandler(intent_my_dotabuff),
         'intent-my-mmr': ScenarioHandler(intent_my_mmr),
@@ -430,4 +484,5 @@ def create_dota_scenario_handlers(
         "intent-debug-add-random-medal": ScenarioHandler(intent_debug_add_random_medal),
         "intent-debug-clear-medals": ScenarioHandler(intent_debug_clear_medals),
         "intent-debug-my-medals": ScenarioHandler(intent_debug_my_medals),
+        "intent-debug-calc-medals": ScenarioHandler(intent_debug_calc_medals),
     }

@@ -179,6 +179,11 @@ intent-debug-my-medals:
 # intent-debug-add-random-medal:
 #   - dmedaladd
 #
-# intent-debug-clear-medals:
-#   - dmedalclear
-#
+intent-debug-clear-medals:
+#  - dmedalclear
+   - очисти все мои <medal>
+   - удали все мои <medal>
+
+intent-debug-calc-medals:
+  - посчитай <medal> в матче {int}: {match_id: "{{ args[4].value }}"}
+  - дай <medal> за матч {int}: {match_id: "{{ args[4].value }}"}
