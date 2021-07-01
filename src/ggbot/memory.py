@@ -2,7 +2,7 @@ from typing import Any, Optional
 
 import pickledb
 
-from .context import Context, BotContext, IValue
+from .context import Context, BotContext, IValue, IVariable
 from .component import BotComponent
 
 __all__ = [
@@ -94,13 +94,14 @@ class Memory(BotComponent):
             return self.storage.contains_key(f'{context.author.member.id}-{key}')
         return _fn
 
-    def copy_user_var_to_local(self, key: str, target_var: str):
+    def copy_user_var_to_local(self, key: str, target_var: IVariable):
         async def _fn(context: Context):
             nonlocal self
             user_key = f'{context.author.member.id}-{key}'
             if self.storage.contains_key(user_key):
-                context.local[target_var] = self.storage.get(user_key)
-            return True
+                context.set_variable(target_var, self.storage.get(user_key))
+                return True
+            return False
         return _fn
 
     def set_user_var_from(self, key: str, value: IValue):

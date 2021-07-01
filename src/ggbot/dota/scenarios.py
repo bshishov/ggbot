@@ -1,4 +1,4 @@
-from typing import Mapping
+from typing import Mapping, Callable, Awaitable, List
 
 from ggbot.memory import Memory
 from ggbot.btree import *
@@ -16,18 +16,50 @@ __all__ = [
 ]
 
 
-def create_dota_scenario_handlers(
+def load_or_create_medals(
         memory: Memory,
-        dota: Dota,
-        api: OpenDotaApi
-) -> Mapping[str, ScenarioHandler]:
-    steam_id = Variable('steam_id', NUMBER)
-    last_match_id = Variable('last_match_id', NUMBER)
-    last_match = Variable('last_match', DOTA_MATCH)
-    match_player = Variable('match_player', DOTA_MATCH_PLAYER)
-    medal_ids = Variable('medal_ids', ARRAY(STRING))
-    phrase = Variable('phrase', STRING)
-    rankings = Variable('rankings', ARRAY(DOTA_PLAYER_RANKING))
+        user_medals: IVariable[Mapping[str, int]],
+        user_parsed_matches: IVariable[List[int]],
+) -> Action:
+    return sequence(
+        selector(
+            sequence(
+                log("Загружаем медальки из памяти"),
+                memory.check_user_var_exists(user_medals.get_name()),
+                memory.copy_user_var_to_local(user_medals.get_name(), user_medals)
+            ),
+            sequence(
+                log("Создаем пустые медальки"),
+                set_var_from(user_medals, Factory(MAP(STRING, NUMBER), dict))
+            )
+        ),
+        selector(
+            sequence(
+                log("Загружаем матчи из памяти"),
+                memory.check_user_var_exists(user_parsed_matches.get_name()),
+                memory.copy_user_var_to_local(user_parsed_matches.get_name(), user_parsed_matches)
+            ),
+            sequence(
+                log("Создаем пустые медальки"),
+                set_var_from(user_parsed_matches, Factory(ARRAY(NUMBER), list))
+            )
+        )
+    )
+
+
+def save_medals(
+        memory: Memory,
+        user_medals: IVariable[Mapping[str, int]],
+        user_parsed_matches: IVariable[List[int]],
+) -> Action:
+    return sequence(
+        log("Сохраняем медальки и распаршенные матчи"),
+        memory.set_user_var_from(user_medals.get_name(), user_medals),
+        memory.set_user_var_from(user_parsed_matches.get_name(), user_parsed_matches)
+    )
+
+
+def require_steam_id(memory: Memory, steam_id: IVariable[int]) -> Action:
     steam_id_user_var = 'steam_id'
 
     request_dotabuff_from_user = selector(
@@ -43,7 +75,7 @@ def create_dota_scenario_handlers(
                     sequence(
                         wait_for_message_from_user(60),
                         parse_steam_id_from_message(steam_id),
-                        memory.set_user_var(steam_id_user_var, '{{ steam_id }}')
+                        memory.set_user_var_from(steam_id_user_var, steam_id)
                     ),
                     always_fail(reply_to_message('Кинь ссылку либо айди'))
                 )
@@ -52,14 +84,36 @@ def create_dota_scenario_handlers(
         )
     )
 
-    require_dotabuff = sequence(
+    return sequence(
         request_dotabuff_from_user,
         memory.check_user_var_exists(steam_id_user_var),
-        memory.copy_user_var_to_local(steam_id_user_var, 'steam_id'),
+        memory.copy_user_var_to_local(steam_id_user_var, steam_id),
     )
 
+
+def create_dota_scenario_handlers(
+        memory: Memory,
+        dota: Dota,
+        api: OpenDotaApi
+) -> Mapping[str, ScenarioHandler]:
+    # Variables
+    steam_id = Variable('steam_id', NUMBER)
+    last_match_id = Variable('last_match_id', NUMBER)
+    last_match = Variable('last_match', DOTA_MATCH)
+    match_player = Variable('match_player', DOTA_MATCH_PLAYER)
+    match_medals = Variable('player_medals', ARRAY(DOTA_PLAYER_MEDAL))
+    phrase = Variable('phrase', STRING)
+    rankings = Variable('rankings', ARRAY(DOTA_PLAYER_RANKING))
+    user_medals = Variable('user_medals', MAP(STRING, NUMBER))
+    user_medals_matches = Variable('user_medals_matches', ARRAY(NUMBER))
+    _medal_name = Variable('_medal_name', STRING)
+    _medal_count = Variable('_medal_count', NUMBER)
+    _medal_to_add = Variable('_medal_to_add', STRING)
+
+    all_medals = Const(ARRAY(STRING), list(PLAYER_MEDALS_DICT.keys()))
+
     intent_my_dotabuff = sequence(
-        require_dotabuff,
+        require_steam_id(memory, steam_id),
         reply_to_message2(
             Formatted(
                 "https://www.dotabuff.com/players/{steam_id}",
@@ -69,7 +123,7 @@ def create_dota_scenario_handlers(
     )
 
     intent_my_mmr = sequence(
-        require_dotabuff,
+        require_steam_id(memory, steam_id),
         RequestOpenDotaAction(
             api_key=dota.api_key,
             #query="players/{{ steam_id }}"
@@ -80,7 +134,7 @@ def create_dota_scenario_handlers(
 
     _ranking = Variable('_ranking', DOTA_PLAYER_RANKING)
     intent_my_best_heroes = sequence(
-        require_dotabuff,
+        require_steam_id(memory, steam_id),
         RequestPlayerRankings(
             api=api,
             steam_id=steam_id,
@@ -103,7 +157,7 @@ def create_dota_scenario_handlers(
     )
 
     intent_my_last_match = sequence(
-        require_dotabuff,
+        require_steam_id(memory, steam_id),
         FetchLastMatchId(api=api, steam_id=steam_id, result=last_match_id),
         RequestMatch(api=api, match_id=last_match_id, result=last_match),
         set_var_from(
@@ -212,12 +266,13 @@ def create_dota_scenario_handlers(
 
     intent_list_medals = reply_to_message2(
         FormattedMedals(
-            Const(ARRAY(STRING), list(PLAYER_MEDALS_DICT.keys()))
+            Const(ARRAY(DOTA_PLAYER_MEDAL), PLAYER_MEDALS)
         )
     )
 
     intent_last_match_medals = sequence(
-        require_dotabuff,
+        require_steam_id(memory, steam_id),
+        load_or_create_medals(memory, user_medals, user_medals_matches),
         FetchLastMatchId(api=api, steam_id=steam_id, result=last_match_id),
         selector(
             CheckSecondsSinceRecentMatchGreaterThan(api, steam_id, seconds=Const(NUMBER, 2 * 60)),
@@ -272,7 +327,19 @@ def create_dota_scenario_handlers(
         ),
         RequestMatch(api=api, match_id=last_match_id, result=last_match),
         set_var_from(var=match_player, value=MatchPlayer(match=last_match, steam_id=steam_id)),
-        CalculateMedals(match=last_match, steam_id=steam_id, result=medal_ids),
+        CalculateMedals(match=last_match, steam_id=steam_id, result=match_medals),
+        selector(
+            sequence(
+                AssignPlayerMedals(
+                    match_medals=match_medals,
+                    match_id=last_match_id,
+                    player_medal_matches=user_medals_matches,
+                    player_medals=user_medals
+                ),
+                save_medals(memory, user_medals, user_medals_matches),
+            ),
+            log("Уже давали ачивки за этот матч")
+        ),
         GeneratePhraseForPlayer(
             phrase_generator=dota.phrase_generator,
             match_player=match_player,
@@ -293,38 +360,14 @@ def create_dota_scenario_handlers(
                     duration=MatchDurationMinutes(last_match)
                 ),
                 match_id=last_match_id,
-                medals=FormattedMedals(medal_ids)
+                medals=FormattedMedals(match_medals)
             ),
             thumbnail=PlayerHeroIconUrl(match_player, dota),
-        )
-    )
-
-    user_medals = Variable('user_medals', MAP(STRING, NUMBER))
-    #user_medals_matches = Variable('user_medals_matches', ARRAY(NUMBER))
-    _medal_name = Variable('_medal_name', STRING)
-    _medal_count = Variable('_medal_count', NUMBER)
-    _medal_to_add = Variable('_medal_to_add', STRING)
-
-    all_medals = Const(ARRAY(STRING), list(PLAYER_MEDALS_DICT.keys()))
-
-    load_or_create_medals = selector(
-        sequence(
-            log("Загружаем медальки из памяти"),
-            memory.check_user_var_exists(user_medals.get_name()),
-            memory.copy_user_var_to_local(user_medals.get_name(), user_medals.get_name())
         ),
-        sequence(
-            log("Создаем пустые медальки"),
-            set_var_from(user_medals, Factory(MAP(STRING, NUMBER), dict))
-        )
-    )
-    save_medals = sequence(
-        log("Сохраняем медальки"),
-        memory.set_user_var_from(user_medals.get_name(), user_medals)
     )
 
     intent_debug_add_random_medal = sequence(
-        load_or_create_medals,
+        load_or_create_medals(memory, user_medals, user_medals_matches),
         set_var_from(
             _medal_to_add,
             Fallback(STRING, RandomElementOf(all_medals), Const(STRING, ""))
@@ -340,19 +383,20 @@ def create_dota_scenario_handlers(
                 medal=_medal_to_add
             )
         ),
-        save_medals
+        save_medals(memory, user_medals, user_medals_matches)
     )
 
     intent_debug_clear_medals = sequence(
-        load_or_create_medals,
+        load_or_create_medals(memory, user_medals, user_medals_matches),
         log("Пересоздаем медальки"),
         set_var_from(user_medals, Factory(MAP(STRING, NUMBER), dict)),
+        set_var_from(user_medals_matches, Factory(ARRAY(NUMBER), list)),
         send_message_to_channel("Все, твоих медалей больше нет!"),
-        save_medals
+        save_medals(memory, user_medals, user_medals_matches)
     )
 
     intent_debug_my_medals = sequence(
-        load_or_create_medals,
+        load_or_create_medals(memory, user_medals, user_medals_matches),
         send_message_to_channel2(
             Formatted(
                 "Твои медали:\n{medals}",
@@ -363,8 +407,10 @@ def create_dota_scenario_handlers(
                         key=_medal_name,
                         value=_medal_count,
                         fn=Formatted(
-                            "**{name}** *{count}*",
-                            name=MedalName(_medal_name),
+                            "x{count} {icon} **{name}** *{desc}*",
+                            icon=Attr(MedalFromId(_medal_name), 'icon'),
+                            name=Attr(MedalFromId(_medal_name), 'name'),
+                            desc=Attr(MedalFromId(_medal_name), 'description'),
                             count=_medal_count
                         )
                     )
@@ -381,7 +427,6 @@ def create_dota_scenario_handlers(
         'intent-dota-pick-against': ScenarioHandler(intent_dota_pick_against),
         'intent-list-medals': ScenarioHandler(intent_list_medals),
         'intent-last-match-medals': ScenarioHandler(intent_last_match_medals),
-
         "intent-debug-add-random-medal": ScenarioHandler(intent_debug_add_random_medal),
         "intent-debug-clear-medals": ScenarioHandler(intent_debug_clear_medals),
         "intent-debug-my-medals": ScenarioHandler(intent_debug_my_medals),

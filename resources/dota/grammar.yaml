@@ -168,13 +168,17 @@ intent-list-medals:
   - список <medal>
 
 intent-last-match-medals:
+  #- dmedals
   - <medal>
 
 intent-debug-my-medals:
-  - debugmymedals
+  #- dmymedals
+  - мои <medal>
+  - у меня <medal>
 
-intent-debug-add-random-medal:
-  - debugmedaladd
-
-intent-debug-clear-medals:
-  - debugmedalclear
+# intent-debug-add-random-medal:
+#   - dmedaladd
+#
+# intent-debug-clear-medals:
+#   - dmedalclear
+#

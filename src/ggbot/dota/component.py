@@ -1,11 +1,10 @@
-from typing import Iterable, Optional, Set, List
+from typing import Iterable, Optional, List, Dict
 import re
 import logging
 import time
 import aiohttp
 
 from attr import dataclass
-
 
 from spec import spec
 from ggbot.context import BotContext, Context, IVariable, IValue
@@ -24,6 +23,7 @@ __all__ = [
     'DOTA_MATCH_PLAYER',
     'DOTA_PLAYER_RANKING',
     'DOTA_HERO_MATCHUP',
+    'DOTA_PLAYER_MEDAL',
     'OPENDOTA_API_URL',
     'Dota',
     'RequestOpenDotaAction',
@@ -37,8 +37,9 @@ __all__ = [
     'CheckMatchIsParsed',
     'RequestParseMatch',
     'CalculateMedals',
+    'AssignPlayerMedals',
     'FormattedMedals',
-    'MedalName',
+    'MedalFromId',
     'HeroName',
     'MatchPlayer',
     'MatchDurationMinutes',
@@ -62,6 +63,7 @@ DOTA_MATCH = make_struct_from_python_type(DotaMatch)
 DOTA_MATCH_PLAYER = make_struct_from_python_type(Player)
 DOTA_PLAYER_RANKING = make_struct_from_python_type(PlayerRanking)
 DOTA_HERO_MATCHUP = make_struct_from_python_type(HeroMatchup)
+DOTA_PLAYER_MEDAL = make_struct_from_python_type(PlayerMedal)
 
 
 def skill_id_to_name(skill_id: str) -> str:
@@ -382,12 +384,12 @@ class RequestParseMatch:
 class CalculateMedals:
     match: IValue[DotaMatch]
     steam_id: IValue[int]
-    result: IVariable[List[str]]
+    result: IVariable[List[PlayerMedal]]
 
     def __attrs_post_init__(self):
         assert NUMBER.can_accept(self.steam_id.get_return_type())
         assert DOTA_MATCH.can_accept(self.match.get_return_type())
-        assert self.result.get_return_type().can_accept(ARRAY(STRING))
+        assert self.result.get_return_type().can_accept(ARRAY(DOTA_PLAYER_MEDAL))
 
     async def __call__(self, context: Context) -> bool:
         steam_id = self.steam_id.evaluate(context)
@@ -398,28 +400,57 @@ class CalculateMedals:
             # No player in that match
             return False
 
-        medal_ids = []
+        medals = []
         for medal in PLAYER_MEDALS:
             if medal.predicate.check(match, player):
-                medal_ids.append(medal.id)
+                medals.append(medal)
 
-        context.set_variable(self.result, medal_ids)
+        context.set_variable(self.result, medals)
+        return True
+
+
+@dataclass
+class AssignPlayerMedals:
+    match_medals: IValue[List[PlayerMedal]]
+    match_id: IValue[int]
+    player_medal_matches: IVariable[List[int]]
+    player_medals: IVariable[Dict[str, int]]
+
+    def __attrs_post_init__(self):
+        assert ARRAY(DOTA_PLAYER_MEDAL).can_accept(self.match_medals.get_return_type())
+        assert NUMBER.can_accept(self.match_id.get_return_type())
+        assert ARRAY(NUMBER).can_accept(self.player_medal_matches.get_return_type())
+
+    async def __call__(self, context: Context) -> bool:
+        match_id = self.match_id.evaluate(context)
+        medal_matches = self.player_medal_matches.evaluate(context)
+        if match_id in medal_matches:
+            # Medal was already assigned
+            return False
+
+        match_medals = self.match_medals.evaluate(context)
+        player_medals = self.player_medals.evaluate(context)
+
+        for medal in match_medals:
+            player_medals[medal.id] = player_medals.get(medal.id, 0) + 1
+
+        medal_matches.append(match_id)
+        context.set_variable(self.player_medal_matches, medal_matches)
+        context.set_variable(self.player_medals, player_medals)
         return True
 
 
 @dataclass
 class FormattedMedals(IValue[str]):
-    medals_ids: IValue[List[str]]
+    medals_ids: IValue[List[PlayerMedal]]
 
     def __attrs_post_init__(self):
-        assert ARRAY(STRING).can_accept(self.medals_ids.get_return_type())
+        assert ARRAY(DOTA_PLAYER_MEDAL).can_accept(self.medals_ids.get_return_type())
 
     def evaluate(self, context: Context) -> str:
         result = ''
-        for medal_id in self.medals_ids.evaluate(context):
-            medal = PLAYER_MEDALS_DICT.get(medal_id)
-            if medal:
-                result += f'{medal.icon} **{medal.name}** *{medal.description}*\n'
+        for medal in self.medals_ids.evaluate(context):
+            result += f'{medal.icon} **{medal.name}** *{medal.description}*\n'
         return result
 
     def get_return_type(self) -> IType:
@@ -427,21 +458,25 @@ class FormattedMedals(IValue[str]):
 
 
 @dataclass
-class MedalName(IValue[str]):
+class MedalFromId(IValue[PlayerMedal]):
     medal_id: IValue[str]
 
     def __attrs_post_init__(self):
         assert STRING.can_accept(self.medal_id.get_return_type())
 
-    def evaluate(self, context: Context) -> str:
+    def evaluate(self, context: Context) -> PlayerMedal:
         medal_id = self.medal_id.evaluate(context)
         medal = PLAYER_MEDALS_DICT.get(medal_id)
         if medal:
-            return medal.name
-        return medal_id
+            return medal
+        return PlayerMedal(
+            id='non-existent',
+            name='non-existent',
+            predicate=None
+        )
 
     def get_return_type(self) -> IType:
-        return STRING
+        return DOTA_PLAYER_MEDAL
 
 
 @dataclass
@@ -541,3 +576,4 @@ class PlayerHeroIconUrl(IValue[str]):
 
     def get_return_type(self) -> IType:
         return STRING
+
