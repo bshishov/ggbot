@@ -405,7 +405,7 @@ PLAYER_MEDALS = [
         )
     ),
     PlayerMedal(
-        id='lots_of_defence_items',
+        id='bought_2_rapiers',
         name='Дашкевич. А.Ю',
         icon=':woman_teacher:',
         description='Закончить игру с 2мя рапирами',
