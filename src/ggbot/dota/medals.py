@@ -3,6 +3,7 @@ from typing import Mapping
 from attr import dataclass
 
 from ggbot.dota.predicates import *
+from ggbot.dota.commons import ItemsIds, PermanentBuffIds
 
 
 __all__ = [
@@ -87,6 +88,13 @@ PLAYER_MEDALS = [
         predicate=PurchasedItemAfter(item='midas', time=18 * 60)
     ),
     PlayerMedal(
+        id='late_bf',
+        name='Сонный дровосек',
+        icon='🪓⏰',
+        description='Купить поздний бф',
+        predicate=PurchasedItemAfter(item='bfury', time=18 * 60)
+    ),
+    PlayerMedal(
         id='lots_of_sen_placed',
         name='Параноик',
         icon='😱',
@@ -99,6 +107,13 @@ PLAYER_MEDALS = [
         icon='🏋️',
         description='Добить более 50 крипов до 10 минуты',
         predicate=LastHitsInTGreaterThan(50, match_minutes=10),
+    ),
+    PlayerMedal(
+        id='100_creeps_before_10',
+        name='Impressive',
+        icon='💯',
+        description='Добить более 99 крипов до 10 минуты',
+        predicate=LastHitsInTGreaterThan(99, match_minutes=10),
     ),
     PlayerMedal(
         id='many_smoke_usages',
@@ -114,15 +129,16 @@ PLAYER_MEDALS = [
         description='Много предметров на скорость',
         predicate=And(
             Or(
-                HasItemInInventory(48),  # travels
-                HasItemInInventory(220)  # travels 2
+                HasItemInInventory(ItemsIds.travel_boots),
+                HasItemInInventory(ItemsIds.travel_boots_2)
             ),
-            HasItemInInventory(100),  # eul/ cyclone
-            HasItemInInventory(185),  # drums
+            HasItemInInventory(ItemsIds.cyclone),
+            # HasItemInInventory(ItemsIds.ancient_janggo),  # drums :) nobody picks drums
             Or(
-                HasItemInInventory(170),  # yasha
-                HasItemInInventory(277),  # kaya yash
-                HasItemInInventory(154),  # sange yasha
+                HasItemInInventory(ItemsIds.yasha),
+                HasItemInInventory(ItemsIds.yasha_and_kaya),
+                HasItemInInventory(ItemsIds.sange_and_yasha),
+                HasItemInInventory(ItemsIds.manta),
             )
         ),
     ),
@@ -171,7 +187,7 @@ PLAYER_MEDALS = [
     PlayerMedal(
         id='many_camps_stacked',
         name='Патимейкер',
-        icon='💨',
+        icon=':family_mmbb:',
         description='Стакнуть более 5 лагерей',
         predicate=ParamHigherThan(P_CAMPS_STACKED, 5),
     ),
@@ -237,8 +253,8 @@ PLAYER_MEDALS = [
         icon='💫',
         description='Съесть аганим и шард',
         predicate=And(
-            PermanentBuffStacksMoreThan(buff_id=12, stacks=-1),  # aghanims_shard
-            PermanentBuffStacksMoreThan(buff_id=2, stacks=-1),  # ultimate_scepter
+            PermanentBuffStacksMoreThan(buff_id=PermanentBuffIds.aghanims_shard, stacks=-1),
+            PermanentBuffStacksMoreThan(buff_id=PermanentBuffIds.ultimate_scepter, stacks=-1),
         ),
     ),
     PlayerMedal(
@@ -253,28 +269,77 @@ PLAYER_MEDALS = [
         name='Мудреныч',
         icon='🤓',
         description='Набрать более 20 стаков на сайленсере',
-        predicate=PermanentBuffStacksMoreThan(buff_id=3, stacks=60),  # silencer_glaives_of_wisdom
+        predicate=PermanentBuffStacksMoreThan(
+            buff_id=PermanentBuffIds.silencer_glaives_of_wisdom,
+            stacks=60
+        )
     ),
     PlayerMedal(
         id='lots_of_pudge_stacks',
         name='Жиртрест',
         icon='🥩',
-        description='Набрать более 20 стаков на пудже',
-        predicate=PermanentBuffStacksMoreThan(buff_id=4, stacks=30),  # pudge_flesh_heap
+        description='Набрать более 30 стаков на пудже',
+        predicate=PermanentBuffStacksMoreThan(
+            buff_id=PermanentBuffIds.pudge_flesh_heap,
+            stacks=30
+        )
+    ),
+    PlayerMedal(
+        id='lots_of_lion_stacks',
+        name='Не пальцем деланный',
+        icon=':middle_finger:',
+        description='Набрать больше 7 стаков на лионе',
+        predicate=PermanentBuffStacksMoreThan(
+            buff_id=PermanentBuffIds.lion_finger_of_death,
+            stacks=7
+        )
+    ),
+    PlayerMedal(
+        id='lots_of_duel_stacks',
+        name='Дуэлянт',
+        icon='⚔️',
+        description='Набрать больше 300 урона с дуэлей',
+        predicate=PermanentBuffStacksMoreThan(
+            buff_id=PermanentBuffIds.legion_commander_duel,
+            stacks=300
+        )
+    ),
+    PlayerMedal(
+        id='lots_of_slark_stacks',
+        name='Крыса',
+        icon=':rat:',
+        description='Набрать больше 30 стаков на сларке',
+        predicate=PermanentBuffStacksMoreThan(
+            buff_id=PermanentBuffIds.slark_essence_shift,
+            stacks=30
+        )
+    ),
+    PlayerMedal(
+        id='lots_of_bh_gold_stolen',
+        name='Вор',
+        icon=':moneybag:',
+        description='Подрезать более 500 золота джинадой',
+        predicate=PermanentBuffStacksMoreThan(
+            buff_id=PermanentBuffIds.bounty_hunter_jinada,
+            stacks=500
+        )
     ),
     PlayerMedal(
         id='lots_of_buybacks',
         name='Феникс',
         icon='🥚',
         description='Нажать байбек более 2х раз',
-        predicate=BuybackedMoreThan(2),
+        predicate=BuybackedMoreThan(2)
     ),
     PlayerMedal(
         id='read_lots_of_books',
         name='Проффесор',
         icon='📚',
         description='Прочитать более 4х книжек',
-        predicate=PermanentBuffStacksMoreThan(buff_id=6, stacks=4),  # tome_of_knowledge
+        predicate=PermanentBuffStacksMoreThan(
+            buff_id=PermanentBuffIds.tome_of_knowledge,
+            stacks=4
+        )
     ),
     PlayerMedal(
         id='low_net_worth',
@@ -317,6 +382,76 @@ PLAYER_MEDALS = [
         icon=':raccoon:',
         description='Украл аегис',
         predicate=STOLEN_AEGIS,
+    ),
+    PlayerMedal(
+        id='radiance_and_midas',
+        name='Инвестор',
+        icon='💱️',
+        description='Закончить игру с радиком и мидасом',
+        predicate=And(
+            HasItemInInventory(ItemsIds.radiance),
+            HasItemInInventory(ItemsIds.hand_of_midas),
+        ),
+    ),
+    PlayerMedal(
+        id='lots_of_defence_items',
+        name='Лучок',
+        icon='🧅',
+        description='Закончить игру с обраткой, кирасой и лотусом',
+        predicate=And(
+            HasItemInInventory(ItemsIds.blade_mail),
+            HasItemInInventory(ItemsIds.assault),
+            HasItemInInventory(ItemsIds.lotus_orb),
+        )
+    ),
+    PlayerMedal(
+        id='lots_of_defence_items',
+        name='Дашкевич. А.Ю',
+        icon=':woman_teacher:',
+        description='Закончить игру с 2мя рапирами',
+        predicate=And(
+            HasItemInInventory(ItemsIds.blade_mail),
+            HasItemInInventory(ItemsIds.assault),
+            HasItemInInventory(ItemsIds.lotus_orb),
+        )
+    ),
+    PlayerMedal(
+        id='fast_first_blood',
+        name='Кровожадный',
+        icon=':man_vampire:',
+        description='Оформил фб до начала игры',
+        predicate=ClaimedObjectiveOfType('CHAT_MESSAGE_FIRSTBLOOD', before=0)
+    ),
+    PlayerMedal(
+        id='fast_first_blood',
+        name='Сладкая булочка',
+        icon=':doughnut:',
+        description='Отдал фб до начала игры',
+        predicate=DiedOfFirstBloodBefore(before=0)
+    ),
+    PlayerMedal(
+        id='zero_lh_and_denies_up_to_10',
+        name='Пацифист',
+        icon='☮️',
+        description='Не добил ни одного крипа (даже своего) до 10й',
+        predicate=And(
+            Not(LastHitsInTGreaterThan(value=0, match_minutes=10)),
+            Not(DeniesInTGreaterThan(value=0, match_minutes=10)),
+        )
+    ),
+    PlayerMedal(
+        id='lots_of_denies',
+        name='Киллджой',
+        icon=':man_gesturing_no:',
+        description='Добил больше 20 своих крипов',
+        predicate=ParamHigherThan(P_DENIES, 20)
+    ),
+    PlayerMedal(
+        id='lots_of_ancient_kills',
+        name='Ведьмак',
+        icon=':dagger:',
+        description='Добил больше 50 древних крипов',
+        predicate=ParamHigherThan(P_ANCIENT_KILLS, 50)
     ),
 ]
 PLAYER_MEDALS_DICT: Mapping[str, PlayerMedal] = {m.id: m for m in PLAYER_MEDALS}

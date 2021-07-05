@@ -3,7 +3,7 @@ from typing import Optional, Iterable, Set
 
 from attr import dataclass
 
-from ggbot.opendota import DotaMatch, Player
+from ggbot.opendota import DotaMatch, Player, FirstBloodObjective
 
 
 __all__ = [
@@ -13,6 +13,7 @@ __all__ = [
     'IPlayerNumericParamQuery',
     'And',
     'Or',
+    'Not',
     'find_player_by_slot',
     'find_player_by_steam_id',
 
@@ -30,6 +31,7 @@ __all__ = [
     'PredictedVictory',
     'HasItemInInventory',
     'LastHitsInTGreaterThan',
+    'DeniesInTGreaterThan',
     'PurchasedItemEarlierThan',
     'PhrasesInChatMoreThan',
     'PermanentBuffStacksMoreThan',
@@ -39,6 +41,7 @@ __all__ = [
     'MatchShorterThan',
     'MatchLongerThan',
     'ClaimedObjectiveOfType',
+    'DiedOfFirstBloodBefore',
 
     # Players query
     'IN_PARTY',
@@ -63,6 +66,7 @@ __all__ = [
     'P_OBS_PLACED',
     'P_SEN_PLACED',
     'P_CAMPS_STACKED',
+    'P_ANCIENT_KILLS',
 
     # Common predicates:
     'PLAYER_WON',
@@ -103,6 +107,14 @@ class Or(IPlayerPredicate):
             if predicate.check(match, player):
                 return True
         return False
+
+
+class Not(IPlayerPredicate):
+    def __init__(self, predicate: IPlayerPredicate):
+        self._predicate = predicate
+
+    def check(self, match: DotaMatch, player: Player) -> bool:
+        return not self._predicate.check(match, player)
 
 
 class AllPlayersInMatch(IPlayersQuery):
@@ -315,6 +327,19 @@ class LastHitsInTGreaterThan(IPlayerPredicate):
 
 
 @dataclass
+class DeniesInTGreaterThan(IPlayerPredicate):
+    value: int
+    match_minutes: int = 10
+
+    def check(self, match: DotaMatch, player: Player) -> bool:
+        if not player.dn_t:
+            return False
+
+        index = min(self.match_minutes, len(player.dn_t)) - 1
+        return player.dn_t[index] > self.value
+
+
+@dataclass
 class PhrasesInChatMoreThan(IPlayerPredicate):
     amount: int
 
@@ -416,6 +441,7 @@ class BuybackedMoreThan(IPlayerPredicate):
 @dataclass
 class ClaimedObjectiveOfType(IPlayerPredicate):
     type: str
+    before: int = 9999999
 
     def check(self, match: DotaMatch, player: Player) -> bool:
         if not match.objectives:
@@ -424,7 +450,26 @@ class ClaimedObjectiveOfType(IPlayerPredicate):
         for objective in match.objectives:
             if (
                     objective.type == self.type
+                    and objective.time < self.before
                     and getattr(objective, 'player_slot', -1) == player.player_slot
+            ):
+                return True
+        return False
+
+
+@dataclass
+class DiedOfFirstBloodBefore(IPlayerPredicate):
+    before: int = 9999999
+
+    def check(self, match: DotaMatch, player: Player) -> bool:
+        if not match.objectives:
+            return False
+
+        for objective in match.objectives:
+            if (
+                    objective.type == FirstBloodObjective.type
+                    and objective.time < self.before
+                    and objective.key == player.player_slot
             ):
                 return True
         return False
@@ -454,6 +499,7 @@ P_TEAMFIGHT_PARTICIPATION = _ParamQuery('teamfight_participation')
 P_CAMPS_STACKED = _ParamQuery('camps_stacked')
 P_OBS_PLACED = _ParamQuery('obs_placed')
 P_SEN_PLACED = _ParamQuery('sen_placed')
+P_ANCIENT_KILLS = _ParamQuery('ancient_kills')
 
 
 # Common predicates
