@@ -221,13 +221,13 @@ class Player:
     # life_state
     # max_hero_hit
     # multi_kills
-    net_worth: int
+    net_worth: Optional[int]
     # obs
     # obs_left_log
     # obs_log
     obs_placed: Optional[int]
-    party_id: int
-    party_size: int
+    party_id: Optional[int]
+    party_size: Optional[int]
     performance_others: Optional[Dict[str, int]]
     permanent_buffs: Optional[List[PermanentBuffState]]
     pred_vict: Optional[bool]
@@ -336,9 +336,6 @@ class DotaMatch:
     tower_status_dire: int
     tower_status_radiant: int
     version: Optional[int]
-    replay_salt: int
-    series_id: int
-    series_type: int
     players: List[Player]
     patch: int
 
@@ -348,6 +345,9 @@ class DotaMatch:
     region: Optional[int] = None
     throw: Optional[int] = None
     loss: Optional[int] = None
+    replay_salt: Optional[int] = None
+    series_id: Optional[int] = None
+    series_type: Optional[int] = None
 
 
 @dataclass(slots=True, frozen=True)
