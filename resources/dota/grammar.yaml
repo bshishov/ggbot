@@ -87,6 +87,7 @@ intent-dota-pick-against:
   - <q-who> <dota-v-counters> <dota-hero>: {hero_id: "{{ args[2].id }}"}
   - <q-whom> <dota-v-pick-hero> против <dota-hero>: {hero_id: "{{ args[3].id }}"}
   - кем контрить <dota-hero>: {hero_id: "{{ args[2].id }}"}
+  - чем контрить <dota-hero>: {hero_id: "{{ args[2].id }}"}
 
 intent-dota: []
 
@@ -184,6 +185,14 @@ intent-debug-clear-medals:
    - очисти все мои <medal>
    - удали все мои <medal>
 
+give:
+  - дай
+  - посчитай
+  - накинь
+  - расчитай
+  - добавь
+  - посмотри
+  - раздай
+
 intent-debug-calc-medals:
-  - посчитай <medal> в матче {int}: {match_id: "{{ args[4].value }}"}
-  - дай <medal> за матч {int}: {match_id: "{{ args[4].value }}"}
+  - <give> <medal> {int}: {match_id: "{{ args[2].value }}"}
