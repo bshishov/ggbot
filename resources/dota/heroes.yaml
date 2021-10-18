@@ -368,6 +368,7 @@ dota-hero:
   - бабка: {name: npc_dota_hero_snapfire, id: 128}
   - марс: {name: npc_dota_hero_mars, id: 129}
   - dawnbreaker: {name: npc_dota_hero_dawnbreaker, id: 135}
+  - дб: {name: npc_dota_hero_dawnbreaker, id: 135}
   - даун: {name: npc_dota_hero_dawnbreaker, id: 135}
   - даунбрейкер: {name: npc_dota_hero_dawnbreaker, id: 135}
   - даунбрейкер: {name: npc_dota_hero_dawnbreaker, id: 135}

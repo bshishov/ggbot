@@ -30,6 +30,7 @@ __all__ = [
     'UsedItemTimesMoreThan',
     'PredictedVictory',
     'HasItemInInventory',
+    'HasAtLeastNItemsInInventory',
     'LastHitsInTGreaterThan',
     'DeniesInTGreaterThan',
     'PurchasedItemEarlierThan',
@@ -244,6 +245,28 @@ class HasItemInInventory(IPlayerPredicate):
                 or self.item == player.item_5
                 or self.item == player.item_neutral
         )
+
+
+@dataclass
+class HasAtLeastNItemsInInventory(IPlayerPredicate):
+    item: int
+    minimum: int
+
+    def check(self, match: DotaMatch, player: Player) -> bool:
+        number_of_items = 0
+        for item_in_inventory in (
+            player.item_0,
+            player.item_1,
+            player.item_2,
+            player.item_3,
+            player.item_4,
+            player.item_5,
+            player.item_neutral
+        ):
+            if item_in_inventory == self.item:
+                number_of_items += 1
+
+        return number_of_items >= self.minimum
 
 
 @dataclass

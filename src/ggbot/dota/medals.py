@@ -409,11 +409,7 @@ PLAYER_MEDALS = [
         name='Дашкевич. А.Ю',
         icon=':woman_teacher:',
         description='Закончить игру с 2мя рапирами',
-        predicate=And(
-            HasItemInInventory(ItemsIds.blade_mail),
-            HasItemInInventory(ItemsIds.assault),
-            HasItemInInventory(ItemsIds.lotus_orb),
-        )
+        predicate=HasAtLeastNItemsInInventory(ItemsIds.rapier, minimum=2)
     ),
     PlayerMedal(
         id='fast_first_blood',
