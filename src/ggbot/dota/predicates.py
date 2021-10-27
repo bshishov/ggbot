@@ -492,7 +492,7 @@ class DiedOfFirstBloodBefore(IPlayerPredicate):
             if (
                     objective.type == FirstBloodObjective.type
                     and objective.time < self.before
-                    and objective.key == player.player_slot
+                    and match.players[objective.key].player_slot == player.player_slot
             ):
                 return True
         return False
