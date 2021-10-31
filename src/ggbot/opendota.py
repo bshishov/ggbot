@@ -124,8 +124,8 @@ class TeamFightPlayer:
     healing: int
     gold_delta: int
     xp_delta: int
-    xp_start: int
-    xp_end: int
+    xp_start: Optional[int] = None
+    xp_end: Optional[int] = None
 
 
 @dataclass(slots=True, frozen=True, repr=False)
