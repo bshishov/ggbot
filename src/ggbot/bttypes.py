@@ -1,12 +1,10 @@
-from typing import Generic, TypeVar, Union, Dict, List, Any, Callable, Type, Literal
+from typing import Union, Any, Type, Literal
 from abc import ABCMeta, abstractmethod
 from decimal import Decimal
 from inspect import signature, isclass
 
 __all__ = [
     "IType",
-    "TInternal",
-    "Serializable",
     "NUMBER",
     "STRING",
     "NULL_TYPE",
@@ -19,14 +17,10 @@ __all__ = [
     "make_struct_from_python_type",
 ]
 
-TInternal = TypeVar("TInternal")
-Serializable = Union[
-    None, str, int, float, Dict[str, "Serializable"], List["Serializable"]
-]
 InternalNumber = Union[int, float, Decimal]
 
 
-class IType(Generic[TInternal], metaclass=ABCMeta):
+class IType(metaclass=ABCMeta):
     @abstractmethod
     def get_name(self) -> str:
         ...
@@ -35,17 +29,11 @@ class IType(Generic[TInternal], metaclass=ABCMeta):
     def can_accept(self, other: "IType") -> bool:
         ...
 
-    # @abstractmethod
-    # def load(self, value: Serializable) -> TInternal: ...
-
-    # @abstractmethod
-    # def dump(self, value: TInternal) -> Serializable: ...
-
-    def __str__(self):
+    def __str__(self) -> str:
         return self.get_name()
 
 
-class _NumberType(IType[Decimal]):
+class _NumberType(IType):
     def get_name(self) -> str:
         return "Number"
 
@@ -53,7 +41,7 @@ class _NumberType(IType[Decimal]):
         return isinstance(other, _NumberType)
 
 
-class _StringType(IType[Decimal]):
+class _StringType(IType):
     def get_name(self) -> str:
         return "String"
 
@@ -61,7 +49,7 @@ class _StringType(IType[Decimal]):
         return isinstance(other, _StringType)
 
 
-class _BooleanType(IType[bool]):
+class _BooleanType(IType):
     def get_name(self) -> str:
         return "Bool"
 
@@ -69,7 +57,7 @@ class _BooleanType(IType[bool]):
         return isinstance(other, _BooleanType)
 
 
-class _NullType(IType[None]):
+class _NullType(IType):
     def get_name(self) -> str:
         return "Null"
 
@@ -77,7 +65,7 @@ class _NullType(IType[None]):
         return isinstance(other, _NullType)
 
 
-class _AnyType(IType[Any]):
+class _AnyType(IType):
     def get_name(self) -> str:
         return "*"
 
@@ -184,7 +172,7 @@ MAP = _MapType
 STRUCT = _StructType
 
 
-def _resolve_type_from_py_annotation(annotation) -> IType:
+def _resolve_type_from_py_annotation(annotation: Any) -> IType:
     if annotation == str:
         return STRING
     elif annotation in {int, float, Decimal}:
@@ -221,69 +209,3 @@ def make_struct_from_python_type(tp: Type) -> STRUCT:
     for param_name, param in signature(tp).parameters.items():
         attrs[param_name] = _resolve_type_from_py_annotation(param.annotation)
     return STRUCT("PY:" + tp.__name__, **attrs)
-
-
-def _test():
-    assert NUMBER.can_accept(NUMBER)
-    assert STRING.can_accept(STRING)
-    assert NULL_TYPE.can_accept(NULL_TYPE)
-
-    assert not NUMBER.can_accept(NULL_TYPE)
-    assert not NUMBER.can_accept(STRING)
-
-    assert not STRING.can_accept(NULL_TYPE)
-    assert not STRING.can_accept(NUMBER)
-
-    assert not NULL_TYPE.can_accept(STRING)
-    assert not NULL_TYPE.can_accept(NUMBER)
-
-    # Unions
-    optional_numeric = ONEOF(NUMBER, NULL_TYPE)
-    assert optional_numeric.can_accept(NUMBER)
-    assert optional_numeric.can_accept(NULL_TYPE)
-    assert optional_numeric.can_accept(optional_numeric)
-    assert not optional_numeric.can_accept(STRING)
-
-    numeric_or_string = ONEOF(NUMBER, STRING)
-    assert numeric_or_string.can_accept(numeric_or_string)
-    assert numeric_or_string.can_accept(NUMBER)
-    assert numeric_or_string.can_accept(STRING)
-    assert not numeric_or_string.can_accept(NULL_TYPE)
-    assert not numeric_or_string.can_accept(optional_numeric)
-
-    # Array
-    array_of_numbers = ARRAY(NUMBER)
-    assert array_of_numbers.can_accept(array_of_numbers)
-    assert not array_of_numbers.can_accept(ARRAY(STRING))
-    assert not array_of_numbers.can_accept(NULL_TYPE)
-
-    # Covariance
-    array_of_optional_strings = ARRAY(ONEOF(NULL_TYPE, STRING))
-    assert array_of_optional_strings.can_accept(ARRAY(NULL_TYPE))
-    assert array_of_optional_strings.can_accept(ARRAY(STRING))
-    assert array_of_optional_strings.can_accept(array_of_optional_strings)
-
-    # Any
-    assert ANY.can_accept(NUMBER)
-    assert ANY.can_accept(NULL_TYPE)
-    assert ANY.can_accept(STRING)
-    assert ANY.can_accept(array_of_optional_strings)
-    assert ANY.can_accept(array_of_numbers)
-    assert ANY.can_accept(numeric_or_string)
-    assert ANY.can_accept(optional_numeric)
-
-    # Structs
-    class A:
-        def __init__(self, a: str, b: Dict[str, Union[str, int]]):
-            self.a = a
-            self.b = b
-
-    s = make_struct_from_python_type(A)
-
-    assert s.get_attr_type("a").can_accept(STRING)
-    assert s.get_attr_type("b").can_accept(MAP(STRING, NUMBER))
-    print(s.get_name())
-
-
-if __name__ == "__main__":
-    _test()

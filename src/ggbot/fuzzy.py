@@ -1,4 +1,4 @@
-from typing import Optional, Union, Tuple
+from typing import Optional, Union, Tuple, List
 import math
 
 __all__ = [
@@ -209,6 +209,9 @@ class GaussianMf(MembershipFunction):
         return f"{self.__class__.__name__}({self.mean!r}, {self.std!r})"
 
 
+_MF = Union[str, MembershipFunction]
+
+
 class Variable:
     def __init__(
         self,
@@ -236,20 +239,20 @@ class Variable:
                 best_mf_name = name
         return best_mf_name
 
-    def fuzzify(self, mf, x):
+    def fuzzify(self, mf: _MF, x):
         if isinstance(mf, str):
             # Try to get mf by key
-            return self.membership_functions.get(mf).sample(x)
+            return self.membership_functions[mf].sample(x)
         return mf.sample(x)
 
-    def defuzzify(self, mf):
+    def defuzzify(self, mf: _MF):
         bounds_min, bounds_max = self.bounds
         if not isinstance(mf, MembershipFunction):
             # Try to get mf by key
             mf = self.membership_functions[mf]
         return mf.calculate_centroid(bounds_min, bounds_max)
 
-    def get_mf(self, mf) -> MembershipFunction:
+    def get_mf(self, mf: _MF) -> MembershipFunction:
         if not isinstance(mf, MembershipFunction):
             # Try to get mf by key
             mf = self.membership_functions[mf]
@@ -401,9 +404,9 @@ class R:
 class Rules:
     def __init__(self, var: Variable):
         self.var = var
-        self.rules = []
+        self.rules: List[Tuple[_MF, ConditionStatement]] = []
 
-    def add_rule(self, term, condition):
+    def add_rule(self, term: _MF, condition: ConditionStatement):
         self.rules.append((term, condition))
 
     def evaluate(self, **kwargs):

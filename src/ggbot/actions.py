@@ -49,7 +49,7 @@ class TimedEventMessageExpectation(MessageExpectation):
     ) -> bool:
         raise NotImplementedError
 
-    async def satisfy(self, message: discord.Message, context: Context):
+    async def satisfy(self, message: discord.Message, context: Context) -> None:
         raise NotImplementedError
 
     async def wait_for_event(self):
@@ -76,7 +76,7 @@ class MessageFromUserExpectation(TimedEventMessageExpectation):
         )
         return message.author.id == self.expected_user_id
 
-    async def satisfy(self, message: discord.Message, context: Context):
+    async def satisfy(self, message: discord.Message, context: Context) -> None:
         _logger.debug(
             f"Satisfying {self.__class__.__name__} expectation "
             f"expected_user_id={self.expected_user_id} "
@@ -209,7 +209,7 @@ def send_message_to_channel(msg: str):
     return _fn
 
 
-def send_message_to_channel2(msg: IValue[str]):
+def send_message_to_channel2(msg: IExpression[str]):
     async def _fn(context: Context):
         message = msg.evaluate(context)
         if message:
@@ -235,7 +235,7 @@ def reply_to_message(msg: str):
     return _fn
 
 
-def reply_to_message2(msg: IValue[str]):
+def reply_to_message2(msg: IExpression[str]):
     async def _fn(context: Context):
         value = msg.evaluate(context)
         if value:
@@ -289,24 +289,24 @@ def _fix_url(url: str):
 T = TypeVar("T")
 
 
-def _eval(x: Optional[IValue[T]], context: Context) -> Optional[T]:
+def _eval(x: Optional[IExpression[T]], context: Context) -> Optional[T]:
     if x:
         return x.evaluate(context)
 
 
 @dataclass
 class SendEmbed:
-    title: IValue[str]
-    type: IValue[str] = Const(STRING, "rich")
-    description: Optional[IValue[str]] = None
-    url: Optional[IValue[str]] = None
-    thumbnail: Optional[IValue[str]] = None
-    image: Optional[IValue[str]] = None
-    footer: Optional[IValue[str]] = None
-    fields: Optional[IValue[Dict[str, str]]] = None
-    video_url: Optional[IValue[str]] = None
-    video_height: Optional[IValue[str]] = None
-    video_width: Optional[IValue[str]] = None
+    title: IExpression[str]
+    type: IExpression[str] = Const(STRING, "rich")
+    description: Optional[IExpression[str]] = None
+    url: Optional[IExpression[str]] = None
+    thumbnail: Optional[IExpression[str]] = None
+    image: Optional[IExpression[str]] = None
+    footer: Optional[IExpression[str]] = None
+    fields: Optional[IExpression[Dict[str, str]]] = None
+    video_url: Optional[IExpression[str]] = None
+    video_height: Optional[IExpression[str]] = None
+    video_width: Optional[IExpression[str]] = None
 
     async def __call__(self, context: Context) -> bool:
         title = self.title.evaluate(context)

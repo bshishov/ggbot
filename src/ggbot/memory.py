@@ -2,7 +2,7 @@ from typing import Any, Optional
 
 import pickledb
 
-from .context import Context, BotContext, IValue, IVariable
+from .context import Context, BotContext, IExpression, IVariable
 from .component import BotComponent
 
 __all__ = ["BaseStorage", "DictStorage", "PickleDbStorage", "Memory"]
@@ -102,7 +102,7 @@ class Memory(BotComponent):
 
         return _fn
 
-    def set_user_var_from(self, key: str, value: IValue):
+    def set_user_var_from(self, key: str, value: IExpression):
         async def _fn(context: Context):
             nonlocal self
             self.storage.set(

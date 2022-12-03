@@ -1,4 +1,4 @@
-from typing import List, TypeVar, Union
+from typing import TypeVar, Union
 
 from attr import dataclass
 
@@ -12,9 +12,9 @@ TResult = TypeVar('TResult')
 
 
 @dataclass
-class GreaterThan(IValue[bool]):
-    a: Union[IValue[int], IValue[float]]
-    b: Union[IValue[int], IValue[float]]
+class GreaterThan(IExpression[bool]):
+    a: Union[IExpression[int], IExpression[float]]
+    b: Union[IExpression[int], IExpression[float]]
 
     def __attrs_post_init__(self):
         assert NUMBER.can_accept(self.a.get_return_type())
@@ -30,8 +30,8 @@ class GreaterThan(IValue[bool]):
 
 
 @dataclass
-class Doubled(IValue[Union[int, float]]):
-    a: Union[IValue[int], IValue[float]]
+class Doubled(IExpression[Union[int, float]]):
+    a: Union[IExpression[int], IExpression[float]]
 
     def __attrs_post_init__(self):
         assert NUMBER.can_accept(self.a.get_return_type())

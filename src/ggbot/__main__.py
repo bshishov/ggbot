@@ -1,6 +1,7 @@
 import sys
 import logging
 import asyncio
+from typing import List, Any, Dict
 
 import toml
 from jinja2.nativetypes import NativeEnvironment
@@ -48,12 +49,14 @@ async def main(config_filename: str = "app.toml"):
     context = BotContext(template_env=template_env)
 
     """ IGDB """
+    """
     from ggbot.igdb import IgdbClient
 
     igdb = await IgdbClient.create(
         secret=require_item_from_dict_or_env(config, "igdb.secret"),
         client_id=require_item_from_dict_or_env(config, "igdb.client_id"),
     )
+    """
 
     """ Dota """
     from ggbot.dota import Dota
@@ -65,7 +68,7 @@ async def main(config_filename: str = "app.toml"):
     )
     phrases_table = gsc.get_table_by_title("ggbot_dota", worksheet="phrases")
 
-    phrase_parsing_grammar = {}
+    phrase_parsing_grammar: Dict[str, List[Any]] = {}
     for filename in config["dota"]["phrase_parsing_grammar_files"]:
         data = yaml_dict_from_file(filename)
         phrase_parsing_grammar.update(data)

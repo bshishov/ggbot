@@ -1,9 +1,11 @@
-from typing import Callable, Awaitable, TypeVar, Dict
+from typing import Callable, Awaitable, TypeVar, Dict, Union
 import asyncio
 import random
 import logging
 
-from ggbot.context import Context, IValue, IVariable
+from jinja2 import Template
+
+from ggbot.bt.abc import Context, IExpression, IVariable
 from ggbot.bttypes import *
 
 
@@ -88,7 +90,7 @@ def ensure_var(var: str) -> Action:
     return _fn
 
 
-def check_condition(condition) -> Action:
+def check_condition(condition: Union[str, Template]) -> Action:
     async def _fn(ctx: Context):
         return bool(ctx.render_template(condition))
 
@@ -206,7 +208,7 @@ def log(message: str):
     return _fn
 
 
-def log_value(value: IValue[str]):
+def log_value(value: IExpression[str]):
     async def _fn(context: Context):
         _logger.info(value.evaluate(context))
         return True
@@ -219,7 +221,7 @@ TValue = TypeVar("TValue")
 
 
 def set_value_in_map(
-    var: IVariable[Dict[TKey, TValue]], key: IValue[TKey], value: IValue[TValue]
+    var: IVariable[Dict[TKey, TValue]], key: IExpression[TKey], value: IExpression[TValue]
 ) -> Action:
     assert var.get_return_type().can_accept(
         MAP(key.get_return_type(), value.get_return_type())

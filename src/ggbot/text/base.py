@@ -1,4 +1,4 @@
-from typing import Optional, Iterable
+from typing import Optional, Iterable, Dict
 
 __all__ = ["IntentMatchResultBase", "NluBase"]
 
@@ -13,7 +13,7 @@ class IntentMatchResultBase:
     def get_slot_value(self, slot_name: str):
         raise NotImplementedError
 
-    def get_all_slots(self) -> dict[str, str]:
+    def get_all_slots(self) -> Dict[str, str]:
         raise NotImplementedError
 
 

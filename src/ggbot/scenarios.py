@@ -1,4 +1,4 @@
-from .btree import *
+from ggbot.btree import *
 from .actions import *
 from .conversation import ScenarioHandler
 

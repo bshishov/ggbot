@@ -7,14 +7,14 @@ import ctor
 
 from attr import dataclass
 
-from ggbot.context import BotContext, Context, IVariable, IValue
+from ggbot.context import BotContext, Context, IVariable, IExpression
 from ggbot.component import BotComponent
 from ggbot.assets import *
 from ggbot.utils import local_time_cache
 from ggbot.opendota import OpenDotaApi, DotaMatch, Player, PlayerRanking, HeroMatchup
 from ggbot.dota.phrases import PhraseGenerator
 from ggbot.dota.medals import *
-from ggbot.dota.predicates import find_player_by_steam_id
+from ggbot.dota.predicates import find_player_by_steam_id, Just
 from ggbot.bttypes import *
 
 
@@ -121,7 +121,7 @@ class Dota(BotComponent):
 @dataclass
 class RequestOpenDotaAction:
     api_key: str
-    query: IValue[str]
+    query: IExpression[str]
 
     def __attrs_post_init__(self):
         assert STRING.can_accept(self.query.get_return_type())
@@ -165,7 +165,7 @@ class CountMatchupsAction:
 @dataclass
 class GeneratePhraseForPlayer:
     phrase_generator: PhraseGenerator
-    match_player: IValue[Player]
+    match_player: IExpression[Player]
     result: IVariable
     dota: Dota
 
@@ -225,7 +225,7 @@ def parse_steam_id_from_message(target_variable: IVariable[int]):
 @dataclass
 class FetchLastMatchId:
     api: OpenDotaApi
-    steam_id: IValue[int]
+    steam_id: IExpression[int]
     result: IVariable[int]
 
     def __attrs_post_init__(self):
@@ -249,7 +249,7 @@ class FetchLastMatchId:
 @dataclass
 class RequestPlayerRankings:
     api: OpenDotaApi
-    steam_id: IValue[int]
+    steam_id: IExpression[int]
     result: IVariable[List[PlayerRanking]]
     limit: int
 
@@ -274,7 +274,7 @@ def _win_rate(m: HeroMatchup) -> float:
 @dataclass
 class RequestTopHeroMatchups:
     api: OpenDotaApi
-    hero_id: IValue[int]
+    hero_id: IExpression[int]
     result: IVariable[List[HeroMatchup]]
     limit: int
 
@@ -300,8 +300,8 @@ class RequestTopHeroMatchups:
 @dataclass
 class CheckSecondsSinceRecentMatchGreaterThan:
     api: OpenDotaApi
-    steam_id: IValue[int]
-    seconds: IValue[int]
+    steam_id: IExpression[int]
+    seconds: IExpression[int]
 
     def __attrs_post_init__(self):
         assert NUMBER.can_accept(self.steam_id.get_return_type())
@@ -328,7 +328,7 @@ class CheckSecondsSinceRecentMatchGreaterThan:
 @dataclass
 class RequestMatch:
     api: OpenDotaApi
-    match_id: IValue[int]
+    match_id: IExpression[int]
     result: IVariable[DotaMatch]
     use_cached_if_younger_than: float = 24 * 60 * 60
 
@@ -350,7 +350,7 @@ class RequestMatch:
 
 @dataclass
 class CheckMatchIsParsed:
-    match: IValue[DotaMatch]
+    match: IExpression[DotaMatch]
 
     def __attrs_post_init__(self):
         assert DOTA_MATCH.can_accept(self.match.get_return_type())
@@ -368,7 +368,7 @@ class CheckMatchIsParsed:
 @dataclass
 class RequestParseMatch:
     api: OpenDotaApi
-    match_id: IValue[int]
+    match_id: IExpression[int]
     result_job_id: Optional[IVariable[int]] = None
 
     def __attrs_post_init__(self):
@@ -387,8 +387,8 @@ class RequestParseMatch:
 
 @dataclass
 class CalculateMedals:
-    match: IValue[DotaMatch]
-    steam_id: IValue[int]
+    match: IExpression[DotaMatch]
+    steam_id: IExpression[int]
     result: IVariable[List[PlayerMedal]]
 
     def __attrs_post_init__(self):
@@ -416,8 +416,8 @@ class CalculateMedals:
 
 @dataclass
 class AssignPlayerMedals:
-    match_medals: IValue[List[PlayerMedal]]
-    match_id: IValue[int]
+    match_medals: IExpression[List[PlayerMedal]]
+    match_id: IExpression[int]
     player_medal_matches: IVariable[List[int]]
     player_medals: IVariable[Dict[str, int]]
 
@@ -446,8 +446,8 @@ class AssignPlayerMedals:
 
 
 @dataclass
-class FormattedMedals(IValue[str]):
-    medals_ids: IValue[List[PlayerMedal]]
+class FormattedMedals(IExpression[str]):
+    medals_ids: IExpression[List[PlayerMedal]]
 
     def __attrs_post_init__(self):
         assert ARRAY(DOTA_PLAYER_MEDAL).can_accept(self.medals_ids.get_return_type())
@@ -463,8 +463,8 @@ class FormattedMedals(IValue[str]):
 
 
 @dataclass
-class MedalFromId(IValue[PlayerMedal]):
-    medal_id: IValue[str]
+class MedalFromId(IExpression[PlayerMedal]):
+    medal_id: IExpression[str]
 
     def __attrs_post_init__(self):
         assert STRING.can_accept(self.medal_id.get_return_type())
@@ -474,15 +474,15 @@ class MedalFromId(IValue[PlayerMedal]):
         medal = PLAYER_MEDALS_DICT.get(medal_id)
         if medal:
             return medal
-        return PlayerMedal(id="non-existent", name="non-existent", predicate=None)
+        return PlayerMedal(id="non-existent", name="non-existent", predicate=Just(True))
 
     def get_return_type(self) -> IType:
         return DOTA_PLAYER_MEDAL
 
 
 @dataclass
-class HeroName(IValue[str]):
-    hero_id: IValue[int]
+class HeroName(IExpression[str]):
+    hero_id: IExpression[int]
     dota: Dota
 
     def __attrs_post_init__(self):
@@ -497,9 +497,9 @@ class HeroName(IValue[str]):
 
 
 @dataclass
-class MatchPlayer(IValue[Optional[Player]]):
-    match: IValue[DotaMatch]
-    steam_id: IValue[int]
+class MatchPlayer(IExpression[Optional[Player]]):
+    match: IExpression[DotaMatch]
+    steam_id: IExpression[int]
 
     def __attrs_post_init__(self):
         assert DOTA_MATCH.can_accept(self.match.get_return_type())
@@ -516,8 +516,8 @@ class MatchPlayer(IValue[Optional[Player]]):
 
 
 @dataclass
-class PlayerHeroId(IValue[int]):
-    player: IValue[Player]
+class PlayerHeroId(IExpression[int]):
+    player: IExpression[Player]
 
     def __attrs_post_init__(self):
         assert DOTA_MATCH_PLAYER.can_accept(self.player.get_return_type())
@@ -531,8 +531,8 @@ class PlayerHeroId(IValue[int]):
 
 
 @dataclass
-class MatchDurationMinutes(IValue[int]):
-    match: IValue[DotaMatch]
+class MatchDurationMinutes(IExpression[int]):
+    match: IExpression[DotaMatch]
 
     def __attrs_post_init__(self):
         assert DOTA_MATCH.can_accept(self.match.get_return_type())
@@ -546,8 +546,8 @@ class MatchDurationMinutes(IValue[int]):
 
 
 @dataclass
-class MatchPlayerResultString(IValue[str]):
-    player: IValue[Player]
+class MatchPlayerResultString(IExpression[str]):
+    player: IExpression[Player]
 
     def __attrs_post_init__(self):
         assert DOTA_MATCH_PLAYER.can_accept(self.player.get_return_type())
@@ -563,8 +563,8 @@ class MatchPlayerResultString(IValue[str]):
 
 
 @dataclass
-class PlayerHeroIconUrl(IValue[str]):
-    player: IValue[Player]
+class PlayerHeroIconUrl(IExpression[str]):
+    player: IExpression[Player]
     dota: Dota
 
     def __attrs_post_init__(self):

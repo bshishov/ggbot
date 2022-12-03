@@ -111,7 +111,7 @@ def _parse_rules(
 
 
 def rules_from_grammar_dict(
-    data: Mapping[str, List], j2_env: Environment
+    data: Mapping[str, List[Any]], j2_env: Environment
 ) -> List[ExtendedRule]:
     rules = []
     for production, rules_data in data.items():

@@ -1,10 +1,10 @@
-from typing import Dict, Union, TypeVar, Optional, List, Callable
+from typing import Dict, Union, TypeVar, Optional, List, Callable, Any, Generic
 import random
 
 from attr import dataclass
 
 from ggbot.bttypes import *
-from ggbot.context import Context, IVariable, IValue
+from ggbot.context import Context, IVariable, IExpression
 
 
 __all__ = [
@@ -19,8 +19,8 @@ __all__ = [
     "Template",
     "AsString",
     "Formatted",
-    "SlotValue",
-    "NumberSlotValue",
+    "SlotExpression",
+    "NumberSlotExpression",
     "Fallback",
     "set_var_from",
     "Divided",
@@ -39,24 +39,24 @@ T = TypeVar("T")
 TResult = TypeVar("TResult")
 
 
-class Const(IValue[TInternal]):
-    def __init__(self, tp: IType, value: TInternal):
-        self._type = tp
-        self._value = value
+@dataclass(slots=True, frozen=True)
+class Const(IExpression[T]):
+    _type: IType
+    _value: T
 
-    def evaluate(self, ctx) -> TInternal:
+    def evaluate(self, ctx) -> T:
         return self._value
 
     def get_return_type(self) -> IType:
         return self._type
 
 
-class Factory(IValue[TInternal]):
-    def __init__(self, tp: IType, value: Callable[[], TInternal]):
-        self._type = tp
-        self._value = value
+@dataclass(slots=True, frozen=True)
+class Factory(IExpression[T]):
+    _type: IType
+    _value: Callable[[], T]
 
-    def evaluate(self, ctx) -> TInternal:
+    def evaluate(self, ctx) -> T:
         return self._value()
 
     def get_return_type(self) -> IType:
@@ -68,17 +68,17 @@ TRUE = Const(BOOLEAN, True)
 FALSE = Const(BOOLEAN, False)
 
 
-@dataclass(frozen=True)
-class Attr(IValue):
-    object: IValue
+@dataclass(slots=True, frozen=True)
+class Attr(IExpression[Any]):
+    object: IExpression
     attr: str
 
-    def __attrs_post_init__(self):
+    def __attrs_post_init__(self) -> None:
         obj = self.object.get_return_type()
         assert isinstance(obj, STRUCT), f"Struct type expected, got {obj}"
         assert obj.get_attr_type(self.attr)
 
-    def evaluate(self, context: Context):
+    def evaluate(self, context: Context) -> Any:
         return getattr(self.object.evaluate(context), self.attr)
 
     def get_return_type(self) -> IType:
@@ -87,9 +87,9 @@ class Attr(IValue):
         return obj.get_attr_type(self.attr)
 
 
-@dataclass(frozen=True)
-class StringDictionary(IValue[Dict[str, str]]):
-    value: Dict[str, IValue[str]]
+@dataclass(slots=True, frozen=True)
+class StringDictionary(IExpression[Dict[str, str]]):
+    value: Dict[str, IExpression[str]]
 
     def __attrs_post_init__(self):
         for value in self.value.values():
@@ -102,10 +102,10 @@ class StringDictionary(IValue[Dict[str, str]]):
         return MAP(STRING, STRING)
 
 
-@dataclass(frozen=True)
-class Item(IValue[Optional[TVar]]):
-    map: IValue[Dict[str, TVar]]
-    key: IValue[str]
+@dataclass(slots=True, frozen=True)
+class Item(IExpression[Optional[TVar]]):
+    map: IExpression[Dict[str, TVar]]
+    key: IExpression[str]
 
     def __attrs_post_init__(self):
         map_type = self.map.get_return_type()
@@ -123,8 +123,8 @@ class Item(IValue[Optional[TVar]]):
         return ONEOF(map_type.get_value_type(), NULL_TYPE)
 
 
-@dataclass(frozen=True)
-class Template(IValue[str]):
+@dataclass(slots=True, frozen=True)
+class Template(IExpression[str]):
     template: str
     resolve_emoji: bool = True
 
@@ -135,9 +135,9 @@ class Template(IValue[str]):
         return STRING
 
 
-@dataclass(frozen=True)
-class AsString(IValue[str]):
-    value: IValue
+@dataclass(slots=True, frozen=True)
+class AsString(IExpression[str]):
+    value: IExpression
 
     def evaluate(self, context: Context) -> str:
         return str(self.value.evaluate(context))
@@ -146,8 +146,8 @@ class AsString(IValue[str]):
         return STRING
 
 
-class Formatted(IValue[str]):
-    def __init__(self, template: str, **kwargs: IValue[str]):
+class Formatted(IExpression[str]):
+    def __init__(self, template: str, **kwargs: IExpression[Any]):
         self.template = template
         self.kwargs = kwargs
         fake_kwargs = {k: "foo" for k, v in self.kwargs.items()}
@@ -164,7 +164,7 @@ class Formatted(IValue[str]):
 
 
 @dataclass(frozen=True)
-class SlotValue(IValue[str]):
+class SlotExpression(IExpression[str]):
     slot_name: str
 
     def evaluate(self, context: Context) -> str:
@@ -175,7 +175,7 @@ class SlotValue(IValue[str]):
 
 
 @dataclass(frozen=True)
-class NumberSlotValue(IValue[int]):
+class NumberSlotExpression(IExpression[int]):
     slot_name: str
 
     def evaluate(self, context: Context) -> int:
@@ -187,9 +187,9 @@ class NumberSlotValue(IValue[int]):
         return NUMBER
 
 
-class Fallback(IValue):
+class Fallback(IExpression):
     def __init__(
-        self, tp: IType, value: IValue[Optional[TVar]], fallback_value: IValue[TVar]
+        self, tp: IType, value: IExpression[Optional[TVar]], fallback_value: IExpression[TVar]
     ):
         assert ONEOF(tp, NULL_TYPE).can_accept(value.get_return_type())
         assert tp.can_accept(fallback_value.get_return_type())
@@ -207,7 +207,7 @@ class Fallback(IValue):
         return self.tp
 
 
-def set_var_from(var: IVariable[TVar], value: IValue[TVar]):
+def set_var_from(var: IVariable[TVar], value: IExpression[TVar]):
     expected_type = ONEOF(NULL_TYPE, var.get_return_type())
     assert expected_type.can_accept(value.get_return_type())
 
@@ -222,9 +222,9 @@ def set_var_from(var: IVariable[TVar], value: IValue[TVar]):
 
 
 @dataclass(frozen=True)
-class Divided(IValue[float]):
-    a: Union[IValue[float], IValue[int]]
-    b: Union[IValue[float], IValue[int]]
+class Divided(IExpression[float]):
+    a: Union[IExpression[float], IExpression[int]]
+    b: Union[IExpression[float], IExpression[int]]
 
     def __attrs_post_init__(self):
         assert NUMBER.can_accept(self.a.get_return_type())
@@ -238,9 +238,9 @@ class Divided(IValue[float]):
 
 
 @dataclass(frozen=True)
-class Sum(IValue[float]):
-    a: Union[IValue[float], IValue[int]]
-    b: Union[IValue[float], IValue[int]]
+class Sum(IExpression[float]):
+    a: Union[IExpression[float], IExpression[int]]
+    b: Union[IExpression[float], IExpression[int]]
 
     def __attrs_post_init__(self):
         assert NUMBER.can_accept(self.a.get_return_type())
@@ -254,8 +254,8 @@ class Sum(IValue[float]):
 
 
 @dataclass(frozen=True)
-class Rounded(IValue[int]):
-    a: Union[IValue[float]]
+class Rounded(IExpression[int]):
+    a: Union[IExpression[float]]
 
     def __attrs_post_init__(self):
         assert NUMBER.can_accept(self.a.get_return_type())
@@ -268,10 +268,10 @@ class Rounded(IValue[int]):
 
 
 @dataclass
-class Filtered(IValue[List[T]]):
-    collection: IValue[List[T]]
+class Filtered(IExpression[List[T]]):
+    collection: IExpression[List[T]]
     x: IVariable[T]  # local var
-    fn: IValue[T]
+    fn: IExpression[T]
 
     def __attrs_post_init__(self):
         assert self.collection.get_return_type().can_accept(
@@ -292,10 +292,10 @@ class Filtered(IValue[List[T]]):
 
 
 @dataclass
-class SelectFromArray(IValue[List[TResult]]):
-    collection: IValue[List[T]]
+class SelectFromArray(Generic[T, TResult], IExpression[List[TResult]]):
+    collection: IExpression[List[T]]
     x: IVariable[T]  # local var
-    fn: IValue[TResult]
+    fn: IExpression[TResult]
 
     def __attrs_post_init__(self):
         assert self.collection.get_return_type().can_accept(
@@ -314,11 +314,11 @@ class SelectFromArray(IValue[List[TResult]]):
 
 
 @dataclass
-class SelectFromMap(IValue[List[TResult]]):
-    collection: IValue[Dict[T, TVar]]
+class SelectFromMap(Generic[T, TVar, TResult], IExpression[List[TResult]]):
+    collection: IExpression[Dict[T, TVar]]
     key: IVariable[T]
     value: IVariable[TVar]
-    fn: IValue[TResult]
+    fn: IExpression[TResult]
 
     def __attrs_post_init__(self):
         map_type = MAP(self.key.get_return_type(), self.value.get_return_type())
@@ -337,9 +337,9 @@ class SelectFromMap(IValue[List[TResult]]):
 
 
 @dataclass
-class JoinedString(IValue[str]):
+class JoinedString(IExpression[str]):
     join_by: str
-    collection: IValue[List[str]]
+    collection: IExpression[List[str]]
 
     def __attrs_post_init__(self):
         assert ARRAY(STRING).can_accept(self.collection.get_return_type())
@@ -353,8 +353,8 @@ class JoinedString(IValue[str]):
 
 
 @dataclass
-class RandomElementOf(IValue[Optional[TVar]]):
-    collection: IValue[List[TVar]]
+class RandomElementOf(IExpression[Optional[TVar]]):
+    collection: IExpression[List[TVar]]
 
     def __attrs_post_init__(self):
         assert isinstance(self.collection.get_return_type(), ARRAY)

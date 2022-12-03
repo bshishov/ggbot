@@ -1,4 +1,4 @@
-from typing import Any, Dict, Union, List, TypeVar, Generic
+from typing import Any, Dict, Union, List, TypeVar, Generic, Optional
 from dataclasses import dataclass, field
 from abc import ABCMeta, abstractmethod
 import logging
@@ -11,10 +11,9 @@ import jinja2
 from ggbot.text import IntentMatchResultBase
 from ggbot import bttypes as types
 
-
 __all__ = [
     "IVariable",
-    "IValue",
+    "IExpression",
     "StrOrTemplate",
     "BotContext",
     "UserContext",
@@ -31,14 +30,14 @@ def _generate_uuid() -> str:
 
 
 StrOrTemplate = Union[str, jinja2.Template]
-TVar = TypeVar("TVar")
+T = TypeVar("T")
 
 EMOJI_RE = re.compile(r":[^:\s]+:")
 
 
-class IValue(Generic[TVar]):
+class IExpression(Generic[T]):
     @abstractmethod
-    def evaluate(self, context: "Context") -> TVar:
+    def evaluate(self, context: "Context") -> T:
         ...
 
     @abstractmethod
@@ -46,7 +45,7 @@ class IValue(Generic[TVar]):
         ...
 
 
-class IVariable(IValue[TVar], metaclass=ABCMeta):
+class IVariable(IExpression[T], metaclass=ABCMeta):
     @abstractmethod
     def get_name(self) -> str:
         ...
@@ -105,7 +104,7 @@ class MessageExpectation:
     async def satisfy(self, message: discord.Message, context: "Context"):
         raise NotImplementedError
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<{self.__class__.__name__}>"
 
 
@@ -114,7 +113,7 @@ class Context:
     bot: BotContext
     message: discord.Message
     author: UserContext  # conversation starter
-    match: IntentMatchResultBase = None
+    match: Optional[IntentMatchResultBase] = None
     local: Dict[str, Any] = field(default_factory=dict)
     name: str = field(default_factory=_generate_uuid)
     expecting_message_from: List[discord.Message] = field(default_factory=list)
@@ -164,12 +163,12 @@ class Context:
     def set_variable(self, variable: IVariable, value):
         self.local[variable.get_name()] = value
 
-    def get_var_value(self, variable: IVariable[TVar]) -> TVar:
+    def get_var_value(self, variable: IVariable[T]) -> T:
         return self.local.get(variable.get_name())
 
 
 @dataclass(frozen=True)
-class Variable(IVariable[TVar]):
+class Variable(IVariable[T]):
     name: str
     type: types.IType
 
@@ -179,5 +178,5 @@ class Variable(IVariable[TVar]):
     def get_return_type(self) -> types.IType:
         return self.type
 
-    def evaluate(self, context: Context) -> TVar:
+    def evaluate(self, context: Context) -> T:
         return context.get_var_value(self)

@@ -7,7 +7,7 @@ from ggbot.conversation import *
 from ggbot.context import *
 from ggbot.btdata import *
 from ggbot.bttypes import *
-from ggbot.opendota import OpenDotaApi
+from ggbot.opendota import OpenDotaApi, DotaMatch
 from ggbot.dota.component import *
 from ggbot.dota.medals import *
 
@@ -95,9 +95,9 @@ def create_dota_scenario_handlers(
     memory: Memory, dota: Dota, api: OpenDotaApi
 ) -> Mapping[str, ScenarioHandler]:
     # Variables
-    steam_id = Variable("steam_id", NUMBER)
-    last_match_id = Variable("last_match_id", NUMBER)
-    last_match = Variable("last_match", DOTA_MATCH)
+    steam_id: Variable[int] = Variable("steam_id", NUMBER)
+    last_match_id: Variable[int] = Variable("last_match_id", NUMBER)
+    last_match: Variable[DotaMatch] = Variable("last_match", DOTA_MATCH)
     match_player = Variable("match_player", DOTA_MATCH_PLAYER)
     match_medals = Variable("player_medals", ARRAY(DOTA_PLAYER_MEDAL))
     phrase = Variable("phrase", STRING)
@@ -240,12 +240,12 @@ def create_dota_scenario_handlers(
 
     intent_dota_pick_against = sequence(
         RequestTopHeroMatchups(
-            api=api, hero_id=NumberSlotValue("hero_id"), result=matchups, limit=6
+            api=api, hero_id=NumberSlotExpression("hero_id"), result=matchups, limit=6
         ),
         reply_to_message2(
             Formatted(
                 "Против {hero} подойдут:\n{heroes}",
-                hero=HeroName(NumberSlotValue("hero_id"), dota),
+                hero=HeroName(NumberSlotExpression("hero_id"), dota),
                 heroes=JoinedString("\n", SelectFromArray(matchups, m, matchup_string)),
             )
         ),
@@ -404,7 +404,7 @@ def create_dota_scenario_handlers(
     intent_debug_calc_medals = sequence(
         require_steam_id(memory, steam_id),
         load_or_create_medals(memory, user_medals, user_medals_matches),
-        set_var_from(last_match_id, NumberSlotValue("match_id")),
+        set_var_from(last_match_id, NumberSlotExpression("match_id")),
         log_value(Formatted("Разбираем ачивки матча {match}", match=last_match_id)),
         selector(
             RequestMatch(

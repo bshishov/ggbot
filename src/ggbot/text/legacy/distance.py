@@ -1,10 +1,10 @@
-from typing import Sequence
+from typing import Sequence, Dict, Tuple
 
 __all__ = ["damerau_levenshtein_distance"]
 
 
 def damerau_levenshtein_distance(s1: Sequence, s2: Sequence) -> int:
-    d: dict[tuple[int, int]] = {}
+    d: Dict[Tuple[int, int], int] = {}
     len1 = len(s1)
     len2 = len(s2)
 

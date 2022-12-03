@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Mapping, Any
 import json
 import os
 import aiohttp
@@ -106,7 +106,7 @@ def local_time_cache(seconds: float):
     return _decorator
 
 
-def get_item_from_dict(data: dict, path: str):
+def get_item_from_dict(data: Mapping[str, Any], path: str):
     obj = data
     for key in path.split("."):
         obj = obj.get(key)
@@ -115,7 +115,7 @@ def get_item_from_dict(data: dict, path: str):
     return obj
 
 
-def require_item_from_dict_or_env(data: dict, path: str, env_var: Optional[str] = None):
+def require_item_from_dict_or_env(data: Mapping[str, Any], path: str, env_var: Optional[str] = None):
     if not env_var:
         env_var = path.replace(".", "_").upper()
 

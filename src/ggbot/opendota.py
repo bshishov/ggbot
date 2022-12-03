@@ -2,9 +2,9 @@ from typing import Union, Literal, Dict, List, Optional
 import aiohttp
 
 from attr import dataclass
+import ctor
 
 from ggbot.utils import get_url_json_with_file_cache
-from spec import spec
 
 
 __all__ = [
@@ -435,14 +435,14 @@ async def get_items() -> Dict[str, DotaItem]:
     data = await get_url_json_with_file_cache(
         "https://raw.githubusercontent.com/odota/dotaconstants/master/build/items.json"
     )
-    return spec.load(Dict[str, DotaItem], data)
+    return ctor.load(Dict[str, DotaItem], data)
 
 
-async def get_item_ids() -> Dict[str, DotaItem]:
+async def get_item_ids() -> Dict[str, str]:
     data = await get_url_json_with_file_cache(
         "https://raw.githubusercontent.com/odota/dotaconstants/master/build/item_ids.json"
     )
-    return spec.load(Dict[str, str], data)
+    return ctor.load(Dict[str, str], data)
 
 
 class OpenDotaApi:
@@ -466,7 +466,7 @@ class OpenDotaApi:
         data = await get_url_json_with_file_cache(
             url, params=self._params, lifetime=cache_lifetime
         )
-        return spec.load(DotaMatch, data)
+        return ctor.load(DotaMatch, data)
 
     async def get_player_recent_matches(
         self, account_id: StrOrInt
@@ -479,7 +479,7 @@ class OpenDotaApi:
         data = await get_url_json_with_file_cache(
             url, params=self._params, lifetime=5 * 60
         )
-        return spec.load(List[PlayerRecentMatch], data)
+        return ctor.load(List[PlayerRecentMatch], data)
 
     async def get_player_rankings(self, account_id: StrOrInt) -> List[PlayerRanking]:
         """GET /players/{account_id}/recentMatches
@@ -491,7 +491,7 @@ class OpenDotaApi:
         data = await get_url_json_with_file_cache(
             url, params=self._params, lifetime=5 * 60 * 60
         )
-        return spec.load(List[PlayerRanking], data)
+        return ctor.load(List[PlayerRanking], data)
 
     async def get_hero_matchups(self, hero_id: StrOrInt) -> List[HeroMatchup]:
         """GET /heroes/{hero_id}/matchups
@@ -503,7 +503,7 @@ class OpenDotaApi:
         data = await get_url_json_with_file_cache(
             url, params=self._params, lifetime=3 * 24 * 60 * 60
         )
-        return spec.load(List[HeroMatchup], data)
+        return ctor.load(List[HeroMatchup], data)
 
     async def request_match_parse(self, match_id: StrOrInt) -> JobStatus:
         """POST /request/{match_id}
@@ -514,7 +514,7 @@ class OpenDotaApi:
         async with aiohttp.ClientSession() as session:
             resp = await session.post(url, params=self._params)
             data = await resp.json(encoding="utf-8")
-            return spec.load(JobStatus, data)
+            return ctor.load(JobStatus, data)
 
     async def parse_job_is_complete(self, job_id: StrOrInt) -> bool:
         """GET /request/{jobId}

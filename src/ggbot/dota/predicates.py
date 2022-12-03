@@ -11,6 +11,7 @@ __all__ = [
     "IPlayerPredicate",
     "IPlayersQuery",
     "IPlayerNumericParamQuery",
+    "Just",
     "And",
     "Or",
     "Not",
@@ -86,6 +87,14 @@ class IPlayersQuery(metaclass=ABCMeta):
         self, match: DotaMatch, subject_player: Player
     ) -> Iterable[Player]:
         ...
+
+
+class Just(IPlayerPredicate):
+    def __init__(self, value: bool) -> None:
+        self._value = value
+
+    def check(self, match: DotaMatch, player: Player) -> bool:
+        return self._value
 
 
 class And(IPlayerPredicate):

@@ -1,4 +1,4 @@
-from typing import Optional, Callable, Awaitable, List
+from typing import Optional, Callable, Awaitable, List, Mapping
 from dataclasses import dataclass
 import logging
 import asyncio
@@ -47,7 +47,7 @@ class ConversationManager:
     def __init__(
         self,
         nlu: NluBase,
-        intent_handlers: dict[str, IntentHandler],
+        intent_handlers: Mapping[str, IntentHandler],
         context: BotContext,
     ):
         self.nlu = nlu
