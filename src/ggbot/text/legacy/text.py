@@ -1,4 +1,4 @@
-from typing import Optional, Any, Iterable, Union
+from typing import Optional, Iterable
 from dataclasses import dataclass, field
 from enum import Enum
 import re
@@ -7,14 +7,9 @@ import logging
 import yaml
 
 from ggbot.text.base import NluBase, IntentMatchResultBase
-from ggbot.text.distance import damerau_levenshtein_distance
+from ggbot.text.legacy.distance import damerau_levenshtein_distance
 
-__all__ = [
-    'Nlu',
-    'find',
-    'tokenize',
-    'match_pattern'
-]
+__all__ = ["Nlu", "find", "tokenize", "match_pattern"]
 
 _logger = logging.getLogger(__name__)
 
@@ -62,58 +57,52 @@ class SlotToken(Token):
 
 class TokenizationRule:
     def tokenize(
-            self,
-            token: Token,
-            prev_token: Optional[Token] = None,
-            next_token: Optional[Token] = None
+        self,
+        token: Token,
+        prev_token: Optional[Token] = None,
+        next_token: Optional[Token] = None,
     ) -> Iterable[Token]:
         raise NotImplementedError
 
 
 class DigitNumberTokenizer(TokenizationRule):
-    NUMBER_PATTERN = re.compile(r'[-+]?\d*\[.,]\d+|\d+')
+    NUMBER_PATTERN = re.compile(r"[-+]?\d*\[.,]\d+|\d+")
 
     def tokenize(
-            self,
-            token: Token,
-            prev_token: Optional[Token] = None,
-            next_token: Optional[Token] = None
+        self,
+        token: Token,
+        prev_token: Optional[Token] = None,
+        next_token: Optional[Token] = None,
     ) -> Iterable[Token]:
         matches = self.NUMBER_PATTERN.findall(token.raw)
         if matches:
-            yield NumberToken(
-                raw=token.raw,
-                number=float(matches[0])
-            )
+            yield NumberToken(raw=token.raw, number=float(matches[0]))
         else:
             yield token
 
 
 class SlotTokenizer(TokenizationRule):
     def tokenize(
-            self,
-            token: Token,
-            prev_token: Optional[Token] = None,
-            next_token: Optional[Token] = None
+        self,
+        token: Token,
+        prev_token: Optional[Token] = None,
+        next_token: Optional[Token] = None,
     ) -> Iterable[Token]:
-        if token.raw.startswith('{') and token.raw.endswith('}'):
+        if token.raw.startswith("{") and token.raw.endswith("}"):
             inner = token.raw[1:-1]
-            yield SlotToken(
-                raw=token.raw,
-                slot=inner
-            )
+            yield SlotToken(raw=token.raw, slot=inner)
         else:
             yield token
 
 
 class PunctuationTokenizer(TokenizationRule):
-    PUNCTUATION_SYMBOLS = set(',.!?\'"()')
+    PUNCTUATION_SYMBOLS = set(",.!?'\"()")
 
     def tokenize(
-            self,
-            token: Token,
-            prev_token: Optional[Token] = None,
-            next_token: Optional[Token] = None
+        self,
+        token: Token,
+        prev_token: Optional[Token] = None,
+        next_token: Optional[Token] = None,
     ) -> Iterable[Token]:
         first = token.raw[0]
         last = token.raw[-1]
@@ -131,10 +120,10 @@ class PunctuationTokenizer(TokenizationRule):
 
 class TextTokenTokenizer(TokenizationRule):
     def tokenize(
-            self,
-            token: Token,
-            prev_token: Optional[Token] = None,
-            next_token: Optional[Token] = None
+        self,
+        token: Token,
+        prev_token: Optional[Token] = None,
+        next_token: Optional[Token] = None,
     ) -> Iterable[Token]:
         if type(token) == Token:
             yield TextToken(norm=token.raw.lower(), raw=token.raw)
@@ -144,12 +133,12 @@ class TextTokenTokenizer(TokenizationRule):
 
 class MentionTokenizer(TokenizationRule):
     def tokenize(
-            self,
-            token: Token,
-            prev_token: Optional[Token] = None,
-            next_token: Optional[Token] = None
+        self,
+        token: Token,
+        prev_token: Optional[Token] = None,
+        next_token: Optional[Token] = None,
     ) -> Iterable[Token]:
-        if token.raw.startswith('@') and len(token.raw) > 1:
+        if token.raw.startswith("@") and len(token.raw) > 1:
             yield MentionToken(raw=token.raw, mention=token.raw[1:])
         else:
             yield token
@@ -160,10 +149,10 @@ _RULES: list[TokenizationRule] = [
     PunctuationTokenizer(),
     SlotTokenizer(),
     MentionTokenizer(),
-    TextTokenTokenizer()
+    TextTokenTokenizer(),
 ]
 
-_SPLIT_PATTERN = re.compile(r'\W+')
+_SPLIT_PATTERN = re.compile(r"\W+")
 
 
 def tokenize(text: str) -> list[Token]:
@@ -171,7 +160,7 @@ def tokenize(text: str) -> list[Token]:
     if not text:
         return []
     tokens = []
-    #raw_tokens = filter(bool, re.split(_SPLIT_PATTERN, text))
+    # raw_tokens = filter(bool, re.split(_SPLIT_PATTERN, text))
     for raw_token in text.split():
         raw_token = raw_token.strip()
         if raw_token:
@@ -183,9 +172,9 @@ def tokenize(text: str) -> list[Token]:
                 prev_token = None
                 next_token = None
                 if i > 0:
-                    prev_token = tokens[i-1]
+                    prev_token = tokens[i - 1]
                 if i < len(tokens) - 1:
-                    next_token = tokens[i+1]
+                    next_token = tokens[i + 1]
                 for new_token in rule.tokenize(token, prev_token, next_token):
                     new_tokens.append(new_token)
             tokens = new_tokens
@@ -238,11 +227,11 @@ class MatchResult:
 
 
 def match_pattern(
-        tl: list[Token],
-        tp: list[Token],
-        sim_threshold: float = 0.5,
-        l2r_sim_coeff: float = 0.8,
-        token_disposition_coeff: float = 0.2
+    tl: list[Token],
+    tp: list[Token],
+    sim_threshold: float = 0.5,
+    l2r_sim_coeff: float = 0.8,
+    token_disposition_coeff: float = 0.2,
 ) -> MatchResult:
     score = 0
     expected_loc = -1
@@ -257,7 +246,7 @@ def match_pattern(
             sim *= l2r_sim_coeff
 
         if loc >= 0 and sim > sim_threshold:
-            #print(f'Matched \'{p}\' with \'{tl[loc]}\'')
+            # print(f'Matched \'{p}\' with \'{tl[loc]}\'')
             score += sim
             score -= abs(expected_loc - loc) * token_disposition_coeff
             expected_loc = loc
@@ -296,7 +285,7 @@ def match_pattern(
         if next_token_loc < 0:
             next_token_loc = len(tl)
 
-        matched_tokens = tl[prev_token_loc+1:next_token_loc]
+        matched_tokens = tl[prev_token_loc + 1 : next_token_loc]
         slots[p.slot] = matched_tokens
 
     return MatchResult(slots=slots, score=score)
@@ -304,7 +293,7 @@ def match_pattern(
 
 def load_synonyms(path: str) -> dict[str, list[list[Token]]]:
     synonyms = {}
-    with open(path, encoding='utf-8') as f:
+    with open(path, encoding="utf-8") as f:
         data = yaml.full_load(f)
         for key, values in data.items():
             options = []
@@ -335,23 +324,29 @@ def find(tl: list[Token], pattern: list[Token], sim_threshold: float = 0.5) -> i
 
 
 def as_raw_text(tl: list[Token]) -> str:
-    return ' '.join(t.raw for t in tl)
+    return " ".join(t.raw for t in tl)
 
 
-def replace_synonyms(tl: list[Token], synonyms, sim_threshold: float = 0.5) -> list[Token]:
+def replace_synonyms(
+    tl: list[Token], synonyms, sim_threshold: float = 0.5
+) -> list[Token]:
     result = tl
     for replacement, synonyms in synonyms.items():
         for syn in synonyms:
             syn_loc = find(result, syn, sim_threshold)
             if syn_loc >= 0:
-                result = result[:syn_loc] + [Token(replacement)] + result[syn_loc+len(syn):]
+                result = (
+                    result[:syn_loc]
+                    + [Token(replacement)]
+                    + result[syn_loc + len(syn) :]
+                )
     return result
 
 
 def load_intents(path: str, pipeline) -> dict[str, list[list[Token]]]:
     intents = {}
-    with open(path, encoding='utf-8') as f:
-        data = yaml.full_load(f)['intents']
+    with open(path, encoding="utf-8") as f:
+        data = yaml.full_load(f)["intents"]
         for intent, phrases_raw in data.items():
             phrases = []
             for phrase in phrases_raw:
@@ -361,8 +356,7 @@ def load_intents(path: str, pipeline) -> dict[str, list[list[Token]]]:
 
 
 def match_intent(
-        tl: list[Token],
-        intents: dict[str, list[list[Token]]]
+    tl: list[Token], intents: dict[str, list[list[Token]]]
 ) -> tuple[str, MatchResult]:
     best_match = None
     best_match_intent = None
@@ -406,33 +400,33 @@ class Nlu(NluBase):
     def match_any_intent(self, text: str) -> Optional[IntentMatchResultBase]:
         return self._match_intent(text, self.intents)
 
-    def match_intent_one_of(self,
-                            text: str,
-                            intents: Iterable[str]) -> Optional[IntentMatchResultBase]:
+    def match_intent_one_of(
+        self, text: str, intents: Iterable[str]
+    ) -> Optional[IntentMatchResultBase]:
         intents_to_match = {}
         for intent in intents:
             if intent in self.intents:
                 intents_to_match[intent] = self.intents[intent]
         return self._match_intent(text, intents_to_match)
 
-    def _match_intent(self, text: str, intents_to_match: dict) -> Optional[IntentMatchResultBase]:
+    def _match_intent(
+        self, text: str, intents_to_match: dict
+    ) -> Optional[IntentMatchResultBase]:
         tokenized = tokenize(text)
-        _logger.debug(f'Tokenized {text} as {tokenized}')
+        _logger.debug(f"Tokenized {text} as {tokenized}")
 
         tokenized = replace_synonyms(tokenized, self.synonyms, sim_threshold=0.9)
-        _logger.debug(f'Replaced synonyms: {tokenized}')
+        _logger.debug(f"Replaced synonyms: {tokenized}")
 
         intent, match = match_intent(tokenized, intents_to_match)
         if intent is None or match is None:
-            _logger.debug(f'No match for {text}')
+            _logger.debug(f"No match for {text}")
             return None
 
         result = _IntentMatchResult(
-            intent=intent,
-            confidence=match.score,
-            slots=match.slots
+            intent=intent, confidence=match.score, slots=match.slots
         )
-        _logger.debug(f'Matched {result}')
+        _logger.debug(f"Matched {result}")
         return result
 
     @classmethod
@@ -445,19 +439,15 @@ class Nlu(NluBase):
             return result
 
         intents = load_intents(intents_path, _pipeline)
-        return Nlu(
-            intents=intents,
-            synonyms=synonyms
-        )
+        return Nlu(intents=intents, synonyms=synonyms)
 
 
 def test_():
     m = match_pattern(
-        tokenize('@gg-bot найди phasmophobia в стиме'),
-        tokenize('найди {game} в стиме')
+        tokenize("@gg-bot найди phasmophobia в стиме"), tokenize("найди {game} в стиме")
     )
 
-    synonyms = load_synonyms('domain/synonyms.yaml')
+    synonyms = load_synonyms("domain/synonyms.yaml")
 
     def _pipeline(text: str):
         tokens = tokenize(text)
@@ -465,37 +455,36 @@ def test_():
         return tokens
 
     match_pattern(
-        _pipeline('гайз кто хочет в дотан'),
-        _pipeline('гайз, кто хочет в {game}?')
+        _pipeline("гайз кто хочет в дотан"), _pipeline("гайз, кто хочет в {game}?")
     )
 
-    intents = load_intents('domain/intents.yaml', _pipeline)
+    intents = load_intents("domain/intents.yaml", _pipeline)
 
     test_phrases = [
-        '@gg-bot добавь дотан в голосование',
-        'всратый бот! добавь чертов дотан в голосование)))!',
-        'добавь дотан в голосование',
-        'удали доту плз',
-        'давай поиграем',
-        'гайз кто хочет в дотан',
-        'пойдете в доту?',
-        'в доту не желаете?',
-        'в доту пойдете?',
-        'mb dota?',
-        'пойдем во что-нить?',
-        'можт ow? @here',
-        'Никто не хочет сегодня крутануть рулетку/сходить во что-нибудь?',
-        ''
+        "@gg-bot добавь дотан в голосование",
+        "всратый бот! добавь чертов дотан в голосование)))!",
+        "добавь дотан в голосование",
+        "удали доту плз",
+        "давай поиграем",
+        "гайз кто хочет в дотан",
+        "пойдете в доту?",
+        "в доту не желаете?",
+        "в доту пойдете?",
+        "mb dota?",
+        "пойдем во что-нить?",
+        "можт ow? @here",
+        "Никто не хочет сегодня крутануть рулетку/сходить во что-нибудь?",
+        "",
     ]
 
     for phrase in test_phrases:
         p = _pipeline(phrase)
-        print(f'{phrase}   {as_raw_text(p)}')
+        print(f"{phrase}   {as_raw_text(p)}")
         intent, match = match_intent(p, intents)
         if intent:
-            print(f'intent: {intent}')
-            print(f'score: {match.score}')
-            print(f'slots: {match.slots}')
+            print(f"intent: {intent}")
+            print(f"score: {match.score}")
+            print(f"slots: {match.slots}")
         print()
 
     """
@@ -515,5 +504,5 @@ def test_():
     """
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     test_()

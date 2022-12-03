@@ -8,84 +8,84 @@ from ggbot.opendota import DotaMatch, Player, FirstBloodObjective
 
 __all__ = [
     # Basic
-    'IPlayerPredicate',
-    'IPlayersQuery',
-    'IPlayerNumericParamQuery',
-    'And',
-    'Or',
-    'Not',
-    'find_player_by_slot',
-    'find_player_by_steam_id',
-
+    "IPlayerPredicate",
+    "IPlayersQuery",
+    "IPlayerNumericParamQuery",
+    "And",
+    "Or",
+    "Not",
+    "find_player_by_slot",
+    "find_player_by_steam_id",
     # Logic
-    'AllPlayersInMatch',
-    'PlayersInTheSameTeam',
-    'PlayersInTheSameParty',
-    'HasHighestParamValue',
-    'HasLowestParamValue',
-    'ParamHigherThan',
-    'ParamLowerThan',
-    'ParamEqual',
-    'PurchasedItemAfter',
-    'UsedItemTimesMoreThan',
-    'PredictedVictory',
-    'HasItemInInventory',
-    'HasAtLeastNItemsInInventory',
-    'LastHitsInTGreaterThan',
-    'DeniesInTGreaterThan',
-    'PurchasedItemEarlierThan',
-    'PhrasesInChatMoreThan',
-    'PermanentBuffStacksMoreThan',
-    'IsToxicChat',
-    'PickedUpRuneTimesMoreThan',
-    'BuybackedMoreThan',
-    'MatchShorterThan',
-    'MatchLongerThan',
-    'ClaimedObjectiveOfType',
-    'DiedOfFirstBloodBefore',
-
+    "AllPlayersInMatch",
+    "PlayersInTheSameTeam",
+    "PlayersInTheSameParty",
+    "HasHighestParamValue",
+    "HasLowestParamValue",
+    "ParamHigherThan",
+    "ParamLowerThan",
+    "ParamEqual",
+    "PurchasedItemAfter",
+    "UsedItemTimesMoreThan",
+    "PredictedVictory",
+    "HasItemInInventory",
+    "HasAtLeastNItemsInInventory",
+    "LastHitsInTGreaterThan",
+    "DeniesInTGreaterThan",
+    "PurchasedItemEarlierThan",
+    "PhrasesInChatMoreThan",
+    "PermanentBuffStacksMoreThan",
+    "IsToxicChat",
+    "PickedUpRuneTimesMoreThan",
+    "BuybackedMoreThan",
+    "MatchShorterThan",
+    "MatchLongerThan",
+    "ClaimedObjectiveOfType",
+    "DiedOfFirstBloodBefore",
     # Players query
-    'IN_PARTY',
-    'IN_TEAM',
-    'IN_MATCH',
-
+    "IN_PARTY",
+    "IN_TEAM",
+    "IN_MATCH",
     # Param queries
-    'P_KILLS',
-    'P_DEATHS',
-    'P_HEALING',
-    'P_ASSISTS',
-    'P_NET_WORTH',
-    'P_COURIER_KILLS',
-    'P_DENIES',
-    'P_HERO_DAMAGE',
-    'P_APM',
-    'P_XPM',
-    'P_GPM',
-    'P_TOWER_DAMAGE',
-    'P_STUNS',
-    'P_TEAMFIGHT_PARTICIPATION',
-    'P_OBS_PLACED',
-    'P_SEN_PLACED',
-    'P_CAMPS_STACKED',
-    'P_ANCIENT_KILLS',
-
+    "P_KILLS",
+    "P_DEATHS",
+    "P_HEALING",
+    "P_ASSISTS",
+    "P_NET_WORTH",
+    "P_COURIER_KILLS",
+    "P_DENIES",
+    "P_HERO_DAMAGE",
+    "P_APM",
+    "P_XPM",
+    "P_GPM",
+    "P_TOWER_DAMAGE",
+    "P_STUNS",
+    "P_TEAMFIGHT_PARTICIPATION",
+    "P_OBS_PLACED",
+    "P_SEN_PLACED",
+    "P_CAMPS_STACKED",
+    "P_ANCIENT_KILLS",
     # Common predicates:
-    'PLAYER_WON',
-    'PLAYER_LOST',
-    'STOLEN_AEGIS',
-    'PICKED_AEGIS',
-    'KILLED_ROSHAN'
+    "PLAYER_WON",
+    "PLAYER_LOST",
+    "STOLEN_AEGIS",
+    "PICKED_AEGIS",
+    "KILLED_ROSHAN",
 ]
 
 
 class IPlayerPredicate(metaclass=ABCMeta):
     @abstractmethod
-    def check(self, match: DotaMatch, player: Player) -> bool: ...
+    def check(self, match: DotaMatch, player: Player) -> bool:
+        ...
 
 
 class IPlayersQuery(metaclass=ABCMeta):
     @abstractmethod
-    def iter_players(self, match: DotaMatch, subject_player: Player) -> Iterable[Player]: ...
+    def iter_players(
+        self, match: DotaMatch, subject_player: Player
+    ) -> Iterable[Player]:
+        ...
 
 
 class And(IPlayerPredicate):
@@ -119,19 +119,25 @@ class Not(IPlayerPredicate):
 
 
 class AllPlayersInMatch(IPlayersQuery):
-    def iter_players(self, match: DotaMatch, subject_player: Player) -> Iterable[Player]:
+    def iter_players(
+        self, match: DotaMatch, subject_player: Player
+    ) -> Iterable[Player]:
         return match.players
 
 
 class PlayersInTheSameTeam(IPlayersQuery):
-    def iter_players(self, match: DotaMatch, subject_player: Player) -> Iterable[Player]:
+    def iter_players(
+        self, match: DotaMatch, subject_player: Player
+    ) -> Iterable[Player]:
         for other in match.players:
             if other.isRadiant == subject_player.isRadiant:
                 yield other
 
 
 class PlayersInTheSameParty(IPlayersQuery):
-    def iter_players(self, match: DotaMatch, subject_player: Player) -> Iterable[Player]:
+    def iter_players(
+        self, match: DotaMatch, subject_player: Player
+    ) -> Iterable[Player]:
         for other in match.players:
             if other.party_id == subject_player.party_id:
                 yield other
@@ -152,7 +158,8 @@ def find_player_by_steam_id(match: DotaMatch, steam_id: int) -> Optional[Player]
 
 
 class IPlayerNumericParamQuery(metaclass=ABCMeta):
-    def get_value(self, player: Player) -> float: ...
+    def get_value(self, player: Player) -> float:
+        ...
 
 
 @dataclass
@@ -160,7 +167,9 @@ class _ParamQuery(IPlayerNumericParamQuery):
     attr: str
 
     def __post_init__(self):
-        assert self.attr in Player.__annotations__, f'No such player attribute: {self.attr}'
+        assert (
+            self.attr in Player.__annotations__
+        ), f"No such player attribute: {self.attr}"
 
     def get_value(self, player: Player) -> float:
         return getattr(player, self.attr)
@@ -237,13 +246,13 @@ class HasItemInInventory(IPlayerPredicate):
 
     def check(self, match: DotaMatch, player: Player) -> bool:
         return (
-                self.item == player.item_0
-                or self.item == player.item_1
-                or self.item == player.item_2
-                or self.item == player.item_3
-                or self.item == player.item_4
-                or self.item == player.item_5
-                or self.item == player.item_neutral
+            self.item == player.item_0
+            or self.item == player.item_1
+            or self.item == player.item_2
+            or self.item == player.item_3
+            or self.item == player.item_4
+            or self.item == player.item_5
+            or self.item == player.item_neutral
         )
 
 
@@ -261,7 +270,7 @@ class HasAtLeastNItemsInInventory(IPlayerPredicate):
             player.item_3,
             player.item_4,
             player.item_5,
-            player.item_neutral
+            player.item_neutral,
         ):
             if item_in_inventory == self.item:
                 number_of_items += 1
@@ -371,7 +380,10 @@ class PhrasesInChatMoreThan(IPlayerPredicate):
             return False
         chat_messages = 0
         for chat_event in match.chat:
-            if chat_event.player_slot == player.player_slot and chat_event.type == 'chat':
+            if (
+                chat_event.player_slot == player.player_slot
+                and chat_event.type == "chat"
+            ):
                 chat_messages += 1
         return chat_messages > self.amount
 
@@ -405,23 +417,13 @@ class PickedUpRuneTimesMoreThan(IPlayerPredicate):
         return runes_count > self.amount
 
 
-TOXIC_PARTS = {
-    'изи',
-    'ez',
-    'изейшая',
-    'изян',
-    'ебан',
-    'шлюха',
-    'саси',
-    'соси',
-    'долб'
-}
+TOXIC_PARTS = {"изи", "ez", "изейшая", "изян", "ебан", "шлюха", "саси", "соси", "долб"}
 
 TOXIC_PHRASES = {
-    '?',
-    '??',
-    '???',
-    'nice hate',
+    "?",
+    "??",
+    "???",
+    "nice hate",
 }
 
 
@@ -445,9 +447,9 @@ class IsToxicChat(IPlayerPredicate):
         toxic_messages = 0
         for chat_event in match.chat:
             if (
-                    chat_event.player_slot == player.player_slot
-                    and chat_event.type == 'chat'
-                    and _is_toxic(chat_event.key)
+                chat_event.player_slot == player.player_slot
+                and chat_event.type == "chat"
+                and _is_toxic(chat_event.key)
             ):
                 toxic_messages += 1
         return toxic_messages > self.min_messages
@@ -472,9 +474,9 @@ class ClaimedObjectiveOfType(IPlayerPredicate):
 
         for objective in match.objectives:
             if (
-                    objective.type == self.type
-                    and objective.time < self.before
-                    and getattr(objective, 'player_slot', -1) == player.player_slot
+                objective.type == self.type
+                and objective.time < self.before
+                and getattr(objective, "player_slot", -1) == player.player_slot
             ):
                 return True
         return False
@@ -490,9 +492,9 @@ class DiedOfFirstBloodBefore(IPlayerPredicate):
 
         for objective in match.objectives:
             if (
-                    objective.type == FirstBloodObjective.type
-                    and objective.time < self.before
-                    and match.players[objective.key].player_slot == player.player_slot
+                objective.type == FirstBloodObjective.type
+                and objective.time < self.before
+                and match.players[objective.key].player_slot == player.player_slot
             ):
                 return True
         return False
@@ -505,29 +507,29 @@ IN_MATCH = AllPlayersInMatch()
 
 
 # Common attributes
-P_KILLS = _ParamQuery('kills')
-P_DEATHS = _ParamQuery('deaths')
-P_ASSISTS = _ParamQuery('assists')
-P_HEALING = _ParamQuery('hero_healing')
-P_NET_WORTH = _ParamQuery('net_worth')
-P_STUNS = _ParamQuery('stuns')
-P_HERO_DAMAGE = _ParamQuery('hero_damage')
-P_XPM = _ParamQuery('xp_per_min')
-P_GPM = _ParamQuery('gold_per_min')
-P_COURIER_KILLS = _ParamQuery('courier_kills')
-P_DENIES = _ParamQuery('denies')
-P_APM = _ParamQuery('actions_per_min')
-P_TOWER_DAMAGE = _ParamQuery('tower_damage')
-P_TEAMFIGHT_PARTICIPATION = _ParamQuery('teamfight_participation')
-P_CAMPS_STACKED = _ParamQuery('camps_stacked')
-P_OBS_PLACED = _ParamQuery('obs_placed')
-P_SEN_PLACED = _ParamQuery('sen_placed')
-P_ANCIENT_KILLS = _ParamQuery('ancient_kills')
+P_KILLS = _ParamQuery("kills")
+P_DEATHS = _ParamQuery("deaths")
+P_ASSISTS = _ParamQuery("assists")
+P_HEALING = _ParamQuery("hero_healing")
+P_NET_WORTH = _ParamQuery("net_worth")
+P_STUNS = _ParamQuery("stuns")
+P_HERO_DAMAGE = _ParamQuery("hero_damage")
+P_XPM = _ParamQuery("xp_per_min")
+P_GPM = _ParamQuery("gold_per_min")
+P_COURIER_KILLS = _ParamQuery("courier_kills")
+P_DENIES = _ParamQuery("denies")
+P_APM = _ParamQuery("actions_per_min")
+P_TOWER_DAMAGE = _ParamQuery("tower_damage")
+P_TEAMFIGHT_PARTICIPATION = _ParamQuery("teamfight_participation")
+P_CAMPS_STACKED = _ParamQuery("camps_stacked")
+P_OBS_PLACED = _ParamQuery("obs_placed")
+P_SEN_PLACED = _ParamQuery("sen_placed")
+P_ANCIENT_KILLS = _ParamQuery("ancient_kills")
 
 
 # Common predicates
 PLAYER_WON = PlayerWon()
 PLAYER_LOST = PlayerLost()
-STOLEN_AEGIS = ClaimedObjectiveOfType('CHAT_MESSAGE_AEGIS_STOLEN')
-PICKED_AEGIS = ClaimedObjectiveOfType('CHAT_MESSAGE_AEGIS')
-KILLED_ROSHAN = ClaimedObjectiveOfType('CHAT_MESSAGE_ROSHAN_KILL')
+STOLEN_AEGIS = ClaimedObjectiveOfType("CHAT_MESSAGE_AEGIS_STOLEN")
+PICKED_AEGIS = ClaimedObjectiveOfType("CHAT_MESSAGE_AEGIS")
+KILLED_ROSHAN = ClaimedObjectiveOfType("CHAT_MESSAGE_ROSHAN_KILL")

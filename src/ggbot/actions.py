@@ -12,18 +12,18 @@ from ggbot.bttypes import *
 
 
 __all__ = [
-    'message_intent_is',
-    'reply_to_message',
-    'reply_to_message2',
-    'wait_for_message_from_user',
-    'wait_for_message_from_user_with_intents',
-    'wait_for_message_from_channel',
-    'send_message_to_channel',
-    'send_message_to_channel2',
-    'edit_last_answer',
-    'SendEmbed',
-    'add_reaction_to_reply_message',
-    'add_reaction_to_request_message'
+    "message_intent_is",
+    "reply_to_message",
+    "reply_to_message2",
+    "wait_for_message_from_user",
+    "wait_for_message_from_user_with_intents",
+    "wait_for_message_from_channel",
+    "send_message_to_channel",
+    "send_message_to_channel2",
+    "edit_last_answer",
+    "SendEmbed",
+    "add_reaction_to_reply_message",
+    "add_reaction_to_request_message",
 ]
 
 _logger = logging.getLogger(__name__)
@@ -44,7 +44,9 @@ class TimedEventMessageExpectation(MessageExpectation):
             return False
         return time.time() < self.expire_at
 
-    async def can_be_satisfied(self, message: discord.Message, context: Context, nlu) -> bool:
+    async def can_be_satisfied(
+        self, message: discord.Message, context: Context, nlu
+    ) -> bool:
         raise NotImplementedError
 
     async def satisfy(self, message: discord.Message, context: Context):
@@ -60,22 +62,28 @@ class MessageFromUserExpectation(TimedEventMessageExpectation):
         self.expected_user_id = expected_user_id
 
     def __post_init__(self):
-        _logger.debug(f'Waiting for message from {self.expected_user_id}')
+        _logger.debug(f"Waiting for message from {self.expected_user_id}")
 
-    async def can_be_satisfied(self, message: discord.Message, context: Context, nlu) -> bool:
-        _logger.debug(f'Checking if message.author.id '
-                      f'expected_user_id={self.expected_user_id} '
-                      f'message.author.id={message.author.id} ({message.author.name})'
-                      f'context.author.member.id={context.author.member.id} '
-                      f'ctx={context.name}')
+    async def can_be_satisfied(
+        self, message: discord.Message, context: Context, nlu
+    ) -> bool:
+        _logger.debug(
+            f"Checking if message.author.id "
+            f"expected_user_id={self.expected_user_id} "
+            f"message.author.id={message.author.id} ({message.author.name})"
+            f"context.author.member.id={context.author.member.id} "
+            f"ctx={context.name}"
+        )
         return message.author.id == self.expected_user_id
 
     async def satisfy(self, message: discord.Message, context: Context):
-        _logger.debug(f'Satisfying {self.__class__.__name__} expectation '
-                      f'expected_user_id={self.expected_user_id} '
-                      f'message.author.id={message.author.id} ({message.author.name})'
-                      f'context.author.member.id={context.author.member.id} '
-                      f'ctx={context.name}')
+        _logger.debug(
+            f"Satisfying {self.__class__.__name__} expectation "
+            f"expected_user_id={self.expected_user_id} "
+            f"message.author.id={message.author.id} ({message.author.name})"
+            f"context.author.member.id={context.author.member.id} "
+            f"ctx={context.name}"
+        )
         context.message = message
         self.event.set()
 
@@ -83,17 +91,19 @@ class MessageFromUserExpectation(TimedEventMessageExpectation):
 @dataclass
 class MessageFromUserWithIntentExpectation(TimedEventMessageExpectation):
     def __init__(
-            self,
-            expected_user_id: int,
-            intents: list[str],
-            timeout: float,
-            priority: float = 1.0
+        self,
+        expected_user_id: int,
+        intents: list[str],
+        timeout: float,
+        priority: float = 1.0,
     ):
         super().__init__(timeout=timeout, priority=priority)
         self.expected_user_id = expected_user_id
         self.intents = intents
 
-    async def can_be_satisfied(self, message: discord.Message, context: Context, nlu) -> bool:
+    async def can_be_satisfied(
+        self, message: discord.Message, context: Context, nlu
+    ) -> bool:
         if not message.author.id == self.expected_user_id:
             return False
 
@@ -114,18 +124,24 @@ class MessageFromChannelExpectation(TimedEventMessageExpectation):
         super().__init__(timeout=timeout, priority=priority)
         self.expected_channel_id = expected_channel_id
 
-    async def can_be_satisfied(self, message: discord.Message, context: 'Context', nlu) -> bool:
-        _logger.debug(f'Checking {self.__class__.__name__} '
-                      f'expected_channel={self.expected_channel_id} '
-                      f'message.channel.id={message.channel.id} ({message.channel.name})'
-                      f'ctx={context.name}')
+    async def can_be_satisfied(
+        self, message: discord.Message, context: "Context", nlu
+    ) -> bool:
+        _logger.debug(
+            f"Checking {self.__class__.__name__} "
+            f"expected_channel={self.expected_channel_id} "
+            f"message.channel.id={message.channel.id} ({message.channel.name})"
+            f"ctx={context.name}"
+        )
         return message.channel.id == self.expected_channel_id
 
-    async def satisfy(self, message: discord.Message, context: 'Context'):
-        _logger.debug(f'Satisfying {self.__class__.__name__} expectation '
-                      f'expected_channel={self.expected_channel_id} '
-                      f'message.channel.id={message.channel.id} ({message.channel.name})'
-                      f'ctx={context.name}')
+    async def satisfy(self, message: discord.Message, context: "Context"):
+        _logger.debug(
+            f"Satisfying {self.__class__.__name__} expectation "
+            f"expected_channel={self.expected_channel_id} "
+            f"message.channel.id={message.channel.id} ({message.channel.name})"
+            f"ctx={context.name}"
+        )
         context.message = message
         self.event.set()
 
@@ -135,15 +151,14 @@ def message_intent_is(intent: str):
         if not context.match:
             return False
         return context.match.get_intent() == intent
+
     return _fn
 
 
 def wait_for_message_from_user_with_intents(intents: list[str], seconds: float = 7):
     async def _fn(ctx: Context):
         expectation = MessageFromUserWithIntentExpectation(
-            expected_user_id=ctx.message.author.id,
-            intents=intents,
-            timeout=seconds
+            expected_user_id=ctx.message.author.id, intents=intents, timeout=seconds
         )
         ctx.expect(expectation)
         try:
@@ -151,6 +166,7 @@ def wait_for_message_from_user_with_intents(intents: list[str], seconds: float =
             return True
         except asyncio.TimeoutError:
             return False
+
     return _fn
 
 
@@ -163,18 +179,22 @@ def wait_for_message_from_user(seconds: float = 7):
             return True
         except asyncio.TimeoutError:
             return False
+
     return _fn
 
 
 def wait_for_message_from_channel(seconds: float = 7):
     async def _fn(ctx: Context):
-        expectation = MessageFromChannelExpectation(ctx.message.channel.id, timeout=seconds)
+        expectation = MessageFromChannelExpectation(
+            ctx.message.channel.id, timeout=seconds
+        )
         ctx.expect(expectation)
         try:
             await expectation.wait_for_event()
             return True
         except asyncio.TimeoutError:
             return False
+
     return _fn
 
 
@@ -185,6 +205,7 @@ def send_message_to_channel(msg: str):
             answer_message = await context.message.channel.send(rendered)
             context.bot.last_answer = answer_message
         return True
+
     return _fn
 
 
@@ -195,6 +216,7 @@ def send_message_to_channel2(msg: IValue[str]):
             answer_message = await context.message.channel.send(message)
             context.bot.last_answer = answer_message
         return True
+
     return _fn
 
 
@@ -209,6 +231,7 @@ def reply_to_message(msg: str):
                 answer_message = await context.message.reply(rendered)
             context.bot.last_answer = answer_message
         return True
+
     return _fn
 
 
@@ -223,6 +246,7 @@ def reply_to_message2(msg: IValue[str]):
                 answer_message = await context.message.reply(value)
             context.bot.last_answer = answer_message
         return True
+
     return _fn
 
 
@@ -232,6 +256,7 @@ def edit_last_answer(msg: str):
             rendered = context.render_template(msg)
             await context.bot.last_answer.edit(content=rendered)
         return True
+
     return _fn
 
 
@@ -240,24 +265,28 @@ def add_reaction_to_request_message(reaction: str):
         if reaction:
             await context.message.add_reaction(context.render_template(reaction))
         return True
+
     return _fn
 
 
 def add_reaction_to_reply_message(reaction: str):
     async def _fn(context: Context):
         if reaction and context.bot.last_answer:
-            await context.bot.last_answer.add_reaction(context.render_template(reaction))
+            await context.bot.last_answer.add_reaction(
+                context.render_template(reaction)
+            )
         return True
+
     return _fn
 
 
 def _fix_url(url: str):
-    if url and url.startswith('//'):
-        return f'https:{url}'
+    if url and url.startswith("//"):
+        return f"https:{url}"
     return url
 
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 def _eval(x: Optional[IValue[T]], context: Context) -> Optional[T]:
@@ -268,7 +297,7 @@ def _eval(x: Optional[IValue[T]], context: Context) -> Optional[T]:
 @dataclass
 class SendEmbed:
     title: IValue[str]
-    type: IValue[str] = Const(STRING, 'rich')
+    type: IValue[str] = Const(STRING, "rich")
     description: Optional[IValue[str]] = None
     url: Optional[IValue[str]] = None
     thumbnail: Optional[IValue[str]] = None

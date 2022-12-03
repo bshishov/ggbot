@@ -17,7 +17,7 @@ from tokema import (
     build_text_parsing_table,
     parse,
     ParseNode,
-    Symbol
+    Symbol,
 )
 from jinja2 import Template, Environment
 from jinja2.nativetypes import NativeEnvironment
@@ -26,24 +26,20 @@ from jinja2.nativetypes import NativeEnvironment
 from ggbot.text.base import NluBase, IntentMatchResultBase
 
 
-__all__ = [
-    'load_rules_from_yaml',
-    'rules_from_grammar_dict',
-    'TokemaNlu'
-]
+__all__ = ["load_rules_from_yaml", "rules_from_grammar_dict", "TokemaNlu"]
 
 
 _logger = logging.getLogger(__name__)
 
 
 class ExtendedRule(Rule):
-    __slots__ = 'meta'
+    __slots__ = "meta"
 
     def __init__(
-            self,
-            production: str,
-            queries: List[Query],
-            meta: Optional[Dict[str, Any]] = None
+        self,
+        production: str,
+        queries: List[Query],
+        meta: Optional[Dict[str, Any]] = None,
     ):
         super().__init__(production, tuple(queries))
         self.meta = meta
@@ -69,11 +65,11 @@ def _parse_queries(raw: str) -> List[Query]:
     for arg in raw.split():
         arg = arg.strip()
 
-        if len(arg) > 2 and arg.startswith('<') and arg.endswith('>'):
+        if len(arg) > 2 and arg.startswith("<") and arg.endswith(">"):
             queries.append(ReferenceQuery(arg[1:-1]))
-        elif arg == '{int}':
+        elif arg == "{int}":
             queries.append(IntQuery())
-        elif arg == '{float}':
+        elif arg == "{float}":
             queries.append(FloatQuery())
         else:
             queries.append(TextQuery(arg, case_sensitive=False))
@@ -81,61 +77,53 @@ def _parse_queries(raw: str) -> List[Query]:
 
 
 def _parse_rule(
-        production: str,
-        raw_queries: str,
-        meta: Optional[Dict[str, str]] = None,
-        jinja_env: Optional[Environment] = None
+    production: str,
+    raw_queries: str,
+    meta: Optional[Dict[str, str]] = None,
+    jinja_env: Optional[Environment] = None,
 ) -> ExtendedRule:
     if jinja_env and meta:
         meta = build_meta_templates(jinja_env, meta)
 
     return ExtendedRule(
-        production=production,
-        queries=_parse_queries(raw_queries),
-        meta=meta
+        production=production, queries=_parse_queries(raw_queries), meta=meta
     )
 
 
 def _parse_rules(
-        production: str,
-        rules_data: List[Union[str, Dict[str, Any]]],
-        jinja_env: Optional[Environment] = None
+    production: str,
+    rules_data: List[Union[str, Dict[str, Any]]],
+    jinja_env: Optional[Environment] = None,
 ) -> List[ExtendedRule]:
     rules = []
 
     for rule_data in rules_data:
         if isinstance(rule_data, str):
-            rule = _parse_rule(
-                production=production,
-                raw_queries=rule_data
-            )
+            rule = _parse_rule(production=production, raw_queries=rule_data)
             rules.append(rule)
         elif isinstance(rule_data, dict):
             for k, v in rule_data.items():
                 rule = _parse_rule(
-                    production=production,
-                    raw_queries=k,
-                    meta=v,
-                    jinja_env=jinja_env
+                    production=production, raw_queries=k, meta=v, jinja_env=jinja_env
                 )
                 rules.append(rule)
     return rules
 
 
-def rules_from_grammar_dict(data: Mapping[str, List], j2_env: Environment) -> List[ExtendedRule]:
+def rules_from_grammar_dict(
+    data: Mapping[str, List], j2_env: Environment
+) -> List[ExtendedRule]:
     rules = []
     for production, rules_data in data.items():
         production_rules = _parse_rules(
-            production=production,
-            rules_data=rules_data,
-            jinja_env=j2_env
+            production=production, rules_data=rules_data, jinja_env=j2_env
         )
         rules.extend(production_rules)
     return rules
 
 
 def load_rules_from_yaml(filename: str, j2_env: Environment) -> List[ExtendedRule]:
-    with open(filename, 'r', encoding='utf-8') as f:
+    with open(filename, "r", encoding="utf-8") as f:
         data = yaml.full_load(f)
         return rules_from_grammar_dict(data, j2_env)
 
@@ -160,14 +148,11 @@ class StemmerResolver(Resolver):
 
 
 def create_table_for_production(
-        production: str,
-        rules: List[ExtendedRule],
-        additional_resolvers: List[Resolver]
+    production: str, rules: List[ExtendedRule], additional_resolvers: List[Resolver]
 ):
-    root_rule = _parse_rule('ROOT', f'<{production}> .')
+    root_rule = _parse_rule("ROOT", f"<{production}> .")
     return build_text_parsing_table(
-        rules=[root_rule, *rules],
-        additional_resolvers=additional_resolvers
+        rules=[root_rule, *rules], additional_resolvers=additional_resolvers
     )
 
 
@@ -190,16 +175,11 @@ def render_ast(node: ParseNode) -> Dict:
         if isinstance(child, ParseNode):
             args_params.append(render_ast(child))
         elif isinstance(child, Symbol):
-            args_params.append({
-                'value': child.value,
-                'meta': child.meta,
-                'position': child.position
-            })
+            args_params.append(
+                {"value": child.value, "meta": child.meta, "position": child.position}
+            )
 
-    params = {
-        'args': args_params,
-        'rule': node.rule.production
-    }
+    params = {"args": args_params, "rule": node.rule.production}
     if isinstance(node.rule, ExtendedRule):
         if node.rule.meta:
             params.update(_render_obj_recursive(node.rule.meta, **params))
@@ -226,8 +206,8 @@ class TokemaMatchResult(IntentMatchResultBase):
 
 # Tokenization regex
 TOKEN_PATTERN = re.compile(
-    r'[^\W\d_]+|'   # any alphabetical and non-numeric
-    r'\d+|'                                  # or digit
+    r"[^\W\d_]+|"  # any alphabetical and non-numeric
+    r"\d+|"  # or digit
     r'[:";\'!@#$%^&*()<>?,./[\]{}\\|\-_+=]'  # or symbol
 )
 
@@ -241,14 +221,12 @@ class TokemaNlu(NluBase):
     def __init__(self, rules: List[ExtendedRule], tokenizer_fn=tokenize):
         self.rules = rules
         self.intents = []
-        self.resolvers = [
-            StemmerResolver(Stemmer('russian'))
-        ]
+        self.resolvers = [StemmerResolver(Stemmer("russian"))]
         self.j2_env = NativeEnvironment()
         self.tokenizer_fn = tokenizer_fn
 
         for r in rules:
-            if r.production.startswith('intent'):
+            if r.production.startswith("intent"):
                 self.intents.append(r.production)
 
         self.intents = tuple(set(self.intents))
@@ -260,29 +238,29 @@ class TokemaNlu(NluBase):
         table = self._parsing_tables.get(intents)
 
         if table is None:
-            _logger.info(f'Creating table for intents {intents}')
+            _logger.info(f"Creating table for intents {intents}")
             augmented_rules = []
 
             root_rule = _parse_rule(
-                production='ROOT',
-                raw_queries='<INTENT> .',
-                meta={'intent': '{{ args[0].intent }}'},
-                jinja_env=self.j2_env
+                production="ROOT",
+                raw_queries="<INTENT> .",
+                meta={"intent": "{{ args[0].intent }}"},
+                jinja_env=self.j2_env,
             )
             augmented_rules.append(root_rule)
 
             for intent in intents:
                 intent_rule = _parse_rule(
-                    production='INTENT',
-                    raw_queries=f'<{intent}>',
-                    meta={'intent': intent}
+                    production="INTENT",
+                    raw_queries=f"<{intent}>",
+                    meta={"intent": intent},
                 )
                 augmented_rules.append(intent_rule)
 
             table = build_text_parsing_table(
                 rules=[*augmented_rules, *self.rules],
-                #verbose=True,
-                additional_resolvers=self.resolvers
+                # verbose=True,
+                additional_resolvers=self.resolvers,
             )
 
             self._parsing_tables[intents] = table
@@ -291,12 +269,12 @@ class TokemaNlu(NluBase):
         return table
 
     def _match(self, text, table) -> Optional[TokemaMatchResult]:
-        input_tokens = [*self.tokenizer_fn(text), '.']
+        input_tokens = [*self.tokenizer_fn(text), "."]
 
         results = parse(
             input_tokens=input_tokens,
             table=table,
-            #verbose=True
+            # verbose=True
         )
 
         if not results:
@@ -305,13 +283,13 @@ class TokemaNlu(NluBase):
         for ast in reversed(results):
             root = ast[0]
 
-            intent_name = root.rule.meta['intent']
+            intent_name = root.rule.meta["intent"]
             intent_ast = root[0]
 
-            _logger.info(f'Matched intent {intent_name}: {intent_ast}')
+            _logger.info(f"Matched intent {intent_name}: {intent_ast}")
 
             slots = render_ast(intent_ast)
-            #pprint.pprint(slots)
+            # pprint.pprint(slots)
 
             return TokemaMatchResult(slots=slots, intent=intent_name)
 
@@ -322,9 +300,7 @@ class TokemaNlu(NluBase):
         return self._match(text, table)
 
     def match_intent_one_of(
-            self,
-            text: str,
-            intents: Iterable[str]
+        self, text: str, intents: Iterable[str]
     ) -> Optional[TokemaMatchResult]:
         table = self._get_or_create_parsing_table(intents)
         return self._match(text, table)
@@ -335,15 +311,15 @@ def _test():
 
     logging.basicConfig(level=logging.INFO)
     grammar_files = [
-        '../common/common.yaml',
-        '../common/datetime.yaml',
-        '../common/intents.yaml',
-        '../common/money.yaml',
-        '../common/numbers.yaml',
-        '../dota/grammar.yaml',
-        '../dota/heroes.yaml',
-        '../search/genres.yaml',
-        '../search/grammar.yaml',
+        "../common/common.yaml",
+        "../common/datetime.yaml",
+        "../common/intents.yaml",
+        "../common/money.yaml",
+        "../common/numbers.yaml",
+        "../dota/grammar.yaml",
+        "../dota/heroes.yaml",
+        "../search/genres.yaml",
+        "../search/grammar.yaml",
     ]
 
     jinja_env = NativeEnvironment()
@@ -362,11 +338,11 @@ def _test():
     ]
 
     for phrase in test_phrases:
-        #match = nlu.match_intent_one_of(phrase, ['intent-search-coop'])
+        # match = nlu.match_intent_one_of(phrase, ['intent-search-coop'])
 
         with benchmark(phrase):
             match = nlu.match_any_intent(phrase)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     _test()

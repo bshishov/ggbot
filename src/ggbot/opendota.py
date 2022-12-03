@@ -8,19 +8,19 @@ from spec import spec
 
 
 __all__ = [
-    'DotaMatch',
-    'Player',
-    'PlayerRanking',
-    'HeroMatchup',
-    'DotaItem',
-    'DotaItemAttrib',
-    'get_items',
-    'get_item_ids',
-    'OpenDotaApi',
+    "DotaMatch",
+    "Player",
+    "PlayerRanking",
+    "HeroMatchup",
+    "DotaItem",
+    "DotaItemAttrib",
+    "get_items",
+    "get_item_ids",
+    "OpenDotaApi",
 ]
 
 
-OPEN_DOTA_API_URL = 'https://api.opendota.com/api'
+OPEN_DOTA_API_URL = "https://api.opendota.com/api"
 StrOrInt = Union[str, int]
 
 
@@ -52,7 +52,7 @@ class BaseObjective:
 
 @dataclass(slots=True, frozen=True)
 class FirstBloodObjective(BaseObjective):
-    type: Literal['CHAT_MESSAGE_FIRSTBLOOD']
+    type: Literal["CHAT_MESSAGE_FIRSTBLOOD"]
     slot: int
     key: int
     player_slot: int
@@ -60,13 +60,13 @@ class FirstBloodObjective(BaseObjective):
 
 @dataclass(slots=True, frozen=True)
 class CourierLostObjective(BaseObjective):
-    type: Literal['CHAT_MESSAGE_COURIER_LOST']
+    type: Literal["CHAT_MESSAGE_COURIER_LOST"]
     team: int
 
 
 @dataclass(slots=True, frozen=True)
 class BuildingKillObjective(BaseObjective):
-    type: Literal['building_kill']
+    type: Literal["building_kill"]
     unit: str
     key: str
     slot: Optional[int] = None
@@ -75,20 +75,20 @@ class BuildingKillObjective(BaseObjective):
 
 @dataclass(slots=True, frozen=True)
 class RoshanKillObjective(BaseObjective):
-    type: Literal['CHAT_MESSAGE_ROSHAN_KILL']
+    type: Literal["CHAT_MESSAGE_ROSHAN_KILL"]
     team: int
 
 
 @dataclass(slots=True, frozen=True)
 class AegisObjective(BaseObjective):
-    type: Literal['CHAT_MESSAGE_AEGIS']
+    type: Literal["CHAT_MESSAGE_AEGIS"]
     slot: int
     player_slot: int
 
 
 @dataclass(slots=True, frozen=True)
 class AegisStolenObjective(BaseObjective):
-    type: Literal['CHAT_MESSAGE_AEGIS_STOLEN']
+    type: Literal["CHAT_MESSAGE_AEGIS_STOLEN"]
     slot: int
     player_slot: int
 
@@ -99,7 +99,7 @@ OneOfObjectives = Union[
     BuildingKillObjective,
     RoshanKillObjective,
     AegisObjective,
-    AegisStolenObjective
+    AegisStolenObjective,
 ]
 
 
@@ -141,7 +141,7 @@ class TeamFight:
 class PlayerBuybackEvent:
     time: int
     slot: int
-    type: Literal['buyback_log']
+    type: Literal["buyback_log"]
     player_slot: int
 
 
@@ -180,7 +180,7 @@ class Player:
     backpack_3: Optional[int]
     buyback_log: Optional[List[PlayerBuybackEvent]]
     camps_stacked: Optional[int]
-    #connection_log: int
+    # connection_log: int
     creeps_stacked: Optional[int]
     # damage
     # damage_inflictor
@@ -393,7 +393,7 @@ class DotaItemAttrib:
     key: str
     header: str
     value: Union[str, List[str]]
-    footer: str = ''
+    footer: str = ""
 
 
 @dataclass(slots=True)
@@ -410,8 +410,8 @@ class DotaItem:
     components: Optional[List[str]]
     created: bool
 
-    dname: str = ''
-    qual: str = ''
+    dname: str = ""
+    qual: str = ""
     hint: Optional[List[str]] = None
     charges: Union[bool, int] = False
 
@@ -433,14 +433,14 @@ class HeroMatchup:
 
 async def get_items() -> Dict[str, DotaItem]:
     data = await get_url_json_with_file_cache(
-        'https://raw.githubusercontent.com/odota/dotaconstants/master/build/items.json'
+        "https://raw.githubusercontent.com/odota/dotaconstants/master/build/items.json"
     )
     return spec.load(Dict[str, DotaItem], data)
 
 
 async def get_item_ids() -> Dict[str, DotaItem]:
     data = await get_url_json_with_file_cache(
-        'https://raw.githubusercontent.com/odota/dotaconstants/master/build/item_ids.json'
+        "https://raw.githubusercontent.com/odota/dotaconstants/master/build/item_ids.json"
     )
     return spec.load(Dict[str, str], data)
 
@@ -453,52 +453,56 @@ class OpenDotaApi:
 
     def __init__(self, api_key: str):
         self.key = api_key
-        self._params = {'api_key': self.key}
+        self._params = {"api_key": self.key}
 
     async def get_match(
-            self,
-            match_id: StrOrInt,
-            cache_lifetime: float = 24 * 60 * 60
+        self, match_id: StrOrInt, cache_lifetime: float = 24 * 60 * 60
     ) -> DotaMatch:
         """GET /matches/{match_id}  (cached)
 
         https://docs.opendota.com/#tag/matches%2Fpaths%2F~1matches~1%7Bmatch_id%7D%2Fget
         """
-        url = f'{OPEN_DOTA_API_URL}/matches/{match_id}'
+        url = f"{OPEN_DOTA_API_URL}/matches/{match_id}"
         data = await get_url_json_with_file_cache(
-            url,
-            params=self._params,
-            lifetime=cache_lifetime
+            url, params=self._params, lifetime=cache_lifetime
         )
         return spec.load(DotaMatch, data)
 
-    async def get_player_recent_matches(self, account_id: StrOrInt) -> List[PlayerRecentMatch]:
+    async def get_player_recent_matches(
+        self, account_id: StrOrInt
+    ) -> List[PlayerRecentMatch]:
         """GET /players/{account_id}/recentMatches
 
-         https://docs.opendota.com/#tag/players%2Fpaths%2F~1players~1%7Baccount_id%7D~1recentMatches%2Fget
+        https://docs.opendota.com/#tag/players%2Fpaths%2F~1players~1%7Baccount_id%7D~1recentMatches%2Fget
         """
-        url = f'{OPEN_DOTA_API_URL}/players/{account_id}/recentMatches'
-        data = await get_url_json_with_file_cache(url, params=self._params, lifetime=5 * 60)
+        url = f"{OPEN_DOTA_API_URL}/players/{account_id}/recentMatches"
+        data = await get_url_json_with_file_cache(
+            url, params=self._params, lifetime=5 * 60
+        )
         return spec.load(List[PlayerRecentMatch], data)
 
     async def get_player_rankings(self, account_id: StrOrInt) -> List[PlayerRanking]:
         """GET /players/{account_id}/recentMatches
 
-         https://docs.opendota.com/#tag/players%2Fpaths%2F~1players~1%7Baccount_id%7D~1recentMatches%2Fget
-         https://blog.opendota.com/2016/09/30/explaining-rankings/
+        https://docs.opendota.com/#tag/players%2Fpaths%2F~1players~1%7Baccount_id%7D~1recentMatches%2Fget
+        https://blog.opendota.com/2016/09/30/explaining-rankings/
         """
-        url = f'{OPEN_DOTA_API_URL}/players/{account_id}/rankings'
-        data = await get_url_json_with_file_cache(url, params=self._params, lifetime=5 * 60 * 60)
+        url = f"{OPEN_DOTA_API_URL}/players/{account_id}/rankings"
+        data = await get_url_json_with_file_cache(
+            url, params=self._params, lifetime=5 * 60 * 60
+        )
         return spec.load(List[PlayerRanking], data)
 
     async def get_hero_matchups(self, hero_id: StrOrInt) -> List[HeroMatchup]:
         """GET /heroes/{hero_id}/matchups
 
-         https://docs.opendota.com/#tag/heroes%2Fpaths%2F~1heroes~1%7Bhero_id%7D~1matchups%2Fget
-         https://blog.opendota.com/2016/09/30/explaining-rankings/
+        https://docs.opendota.com/#tag/heroes%2Fpaths%2F~1heroes~1%7Bhero_id%7D~1matchups%2Fget
+        https://blog.opendota.com/2016/09/30/explaining-rankings/
         """
-        url = f'{OPEN_DOTA_API_URL}/heroes/{hero_id}/matchups'
-        data = await get_url_json_with_file_cache(url, params=self._params, lifetime=3 * 24 * 60 * 60)
+        url = f"{OPEN_DOTA_API_URL}/heroes/{hero_id}/matchups"
+        data = await get_url_json_with_file_cache(
+            url, params=self._params, lifetime=3 * 24 * 60 * 60
+        )
         return spec.load(List[HeroMatchup], data)
 
     async def request_match_parse(self, match_id: StrOrInt) -> JobStatus:
@@ -506,10 +510,10 @@ class OpenDotaApi:
 
         https://docs.opendota.com/#tag/request%2Fpaths%2F~1request~1%7Bmatch_id%7D%2Fpost
         """
-        url = f'{OPEN_DOTA_API_URL}/request/{match_id}'
+        url = f"{OPEN_DOTA_API_URL}/request/{match_id}"
         async with aiohttp.ClientSession() as session:
             resp = await session.post(url, params=self._params)
-            data = await resp.json(encoding='utf-8')
+            data = await resp.json(encoding="utf-8")
             return spec.load(JobStatus, data)
 
     async def parse_job_is_complete(self, job_id: StrOrInt) -> bool:
@@ -517,11 +521,11 @@ class OpenDotaApi:
 
         https://docs.opendota.com/#tag/request%2Fpaths%2F~1request~1%7BjobId%7D%2Fget
         """
-        url = f'{OPEN_DOTA_API_URL}/request/{job_id}'
+        url = f"{OPEN_DOTA_API_URL}/request/{job_id}"
         async with aiohttp.ClientSession() as session:
             resp = await session.get(url, params=self._params)
             # data = await resp.json(encoding='utf-8')
             return resp.status == 200
 
     def __repr__(self):
-        return '<Open Dota API>'
+        return "<Open Dota API>"

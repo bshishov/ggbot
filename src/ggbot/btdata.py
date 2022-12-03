@@ -8,35 +8,35 @@ from ggbot.context import Context, IVariable, IValue
 
 
 __all__ = [
-    'Attr',
-    'Const',
-    'Factory',
-    'NULL',
-    'TRUE',
-    'FALSE',
-    'StringDictionary',
-    'Item',
-    'Template',
-    'AsString',
-    'Formatted',
-    'SlotValue',
-    'NumberSlotValue',
-    'Fallback',
-    'set_var_from',
-    'Divided',
-    'Sum',
-    'Rounded',
-    'Filtered',
-    'SelectFromArray',
-    'SelectFromMap',
-    'JoinedString',
-    'RandomElementOf'
+    "Attr",
+    "Const",
+    "Factory",
+    "NULL",
+    "TRUE",
+    "FALSE",
+    "StringDictionary",
+    "Item",
+    "Template",
+    "AsString",
+    "Formatted",
+    "SlotValue",
+    "NumberSlotValue",
+    "Fallback",
+    "set_var_from",
+    "Divided",
+    "Sum",
+    "Rounded",
+    "Filtered",
+    "SelectFromArray",
+    "SelectFromMap",
+    "JoinedString",
+    "RandomElementOf",
 ]
 
 
-TVar = TypeVar('TVar')
-T = TypeVar('T')
-TResult = TypeVar('TResult')
+TVar = TypeVar("TVar")
+T = TypeVar("T")
+TResult = TypeVar("TResult")
 
 
 class Const(IValue[TInternal]):
@@ -75,7 +75,7 @@ class Attr(IValue):
 
     def __attrs_post_init__(self):
         obj = self.object.get_return_type()
-        assert isinstance(obj, STRUCT), f'Struct type expected, got {obj}'
+        assert isinstance(obj, STRUCT), f"Struct type expected, got {obj}"
         assert obj.get_attr_type(self.attr)
 
     def evaluate(self, context: Context):
@@ -150,8 +150,10 @@ class Formatted(IValue[str]):
     def __init__(self, template: str, **kwargs: IValue[str]):
         self.template = template
         self.kwargs = kwargs
-        fake_kwargs = {k: 'foo' for k, v in self.kwargs.items()}
-        assert self.template.format(**fake_kwargs), f'Error in string format {self.template}'
+        fake_kwargs = {k: "foo" for k, v in self.kwargs.items()}
+        assert self.template.format(
+            **fake_kwargs
+        ), f"Error in string format {self.template}"
 
     def evaluate(self, context: Context) -> str:
         kwargs = {k: v.evaluate(context) for k, v in self.kwargs.items()}
@@ -187,10 +189,7 @@ class NumberSlotValue(IValue[int]):
 
 class Fallback(IValue):
     def __init__(
-            self,
-            tp: IType,
-            value: IValue[Optional[TVar]],
-            fallback_value: IValue[TVar]
+        self, tp: IType, value: IValue[Optional[TVar]], fallback_value: IValue[TVar]
     ):
         assert ONEOF(tp, NULL_TYPE).can_accept(value.get_return_type())
         assert tp.can_accept(fallback_value.get_return_type())
@@ -218,6 +217,7 @@ def set_var_from(var: IVariable[TVar], value: IValue[TVar]):
             return False
         context.set_variable(var, result)
         return True
+
     return _fn
 
 
@@ -274,7 +274,9 @@ class Filtered(IValue[List[T]]):
     fn: IValue[T]
 
     def __attrs_post_init__(self):
-        assert self.collection.get_return_type().can_accept(ARRAY(self.x.get_return_type()))
+        assert self.collection.get_return_type().can_accept(
+            ARRAY(self.x.get_return_type())
+        )
         assert BOOLEAN.can_accept(self.fn.get_return_type())
 
     def evaluate(self, context: Context) -> List[T]:
@@ -296,7 +298,9 @@ class SelectFromArray(IValue[List[TResult]]):
     fn: IValue[TResult]
 
     def __attrs_post_init__(self):
-        assert self.collection.get_return_type().can_accept(ARRAY(self.x.get_return_type()))
+        assert self.collection.get_return_type().can_accept(
+            ARRAY(self.x.get_return_type())
+        )
 
     def evaluate(self, context: Context) -> List[TResult]:
         result = []

@@ -1,5 +1,6 @@
 # TODO float based levenshtein
 
+
 def eq_dist(a, b) -> float:
     return 1 - float(a == b)
 

@@ -4,15 +4,12 @@ import re
 
 import Stemmer
 
-__all__ = [
-    'Entry',
-    'Index'
-]
+__all__ = ["Entry", "Index"]
 
 
 @dataclass
 class Entry:
-    __slots__ = 'original', 'document'
+    __slots__ = "original", "document"
 
     original: str
     document: Any
@@ -21,7 +18,7 @@ class Entry:
         return hash(self.original)
 
 
-_TOKEN_RE = re.compile(r'[\w\d]+')
+_TOKEN_RE = re.compile(r"[\w\d]+")
 
 
 def tokenize(text: str) -> Iterable[str]:
@@ -40,18 +37,31 @@ def bigram_iter(collection: Iterable[str]):
             break
 
 
-DEFAULT_ENGLISH_STOPWORDS = {'a', 'in', 'the', 'be', 'that', 'i', 'have', 'in', 'of', 'to'}
+DEFAULT_ENGLISH_STOPWORDS = {
+    "a",
+    "in",
+    "the",
+    "be",
+    "that",
+    "i",
+    "have",
+    "in",
+    "of",
+    "to",
+}
 
 
 class Index:
     def __init__(
-            self,
-            stemmer: Stemmer.Stemmer = Stemmer.Stemmer('russian'),
-            stopwords: Optional[set[str]] = None
+        self,
+        stemmer: Stemmer.Stemmer = Stemmer.Stemmer("russian"),
+        stopwords: Optional[set[str]] = None,
     ):
         self.stemmer = stemmer
         self.storage: dict[str, set[Entry]] = {}
-        self.stopwords = stopwords if stopwords is not None else DEFAULT_ENGLISH_STOPWORDS
+        self.stopwords = (
+            stopwords if stopwords is not None else DEFAULT_ENGLISH_STOPWORDS
+        )
 
     def _iter_doc_keys(self, text: str, include_single_tokens: bool):
         if not text:

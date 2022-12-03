@@ -1,6 +1,6 @@
 from typing import Sequence
 
-__all__ = ['damerau_levenshtein_distance']
+__all__ = ["damerau_levenshtein_distance"]
 
 
 def damerau_levenshtein_distance(s1: Sequence, s2: Sequence) -> int:

@@ -3,8 +3,8 @@ import itertools
 from collections import namedtuple
 
 
-CONSONANTS = set('bcdfghjklmnpqrstvwxz')  # as # symbol
-WOVELS = set('aeiouy')  # as & symbol
+CONSONANTS = set("bcdfghjklmnpqrstvwxz")  # as # symbol
+WOVELS = set("aeiouy")  # as & symbol
 
 REPLACEMENTS = {
     #'ation': 'эйшн',
@@ -17,73 +17,63 @@ REPLACEMENTS = {
     #'the': 'зе',
     #'ing$': ['ин$', 'инг$'],
     #'se$': 'з$',
-
     # сочетания гласных
-    'l(ue)': 'ю',
-    'q(ue)': 'ю',
-    'r(ue)': 'у',
-    '(ue)': 'у',
-    '(ei)': 'ей',
-    '(ee)': 'и',
+    "l(ue)": "ю",
+    "q(ue)": "ю",
+    "r(ue)": "у",
+    "(ue)": "у",
+    "(ei)": "ей",
+    "(ee)": "и",
     #'(ie)': 'е',
-    '(ie)r$': 'ай',  # multiplier
-    '(ie)$': 'ай',  # pie, lie, die
-    '(ie)': 'и',   # medieval
-    '(oi)': 'ой',
-    '(oy)': 'ой',
-    '(ay)': 'ей',
-    '(ea)': 'и',
-    '(ou)': 'ау',
-    '(ui)': 'и',
-
+    "(ie)r$": "ай",  # multiplier
+    "(ie)$": "ай",  # pie, lie, die
+    "(ie)": "и",  # medieval
+    "(oi)": "ой",
+    "(oy)": "ой",
+    "(ay)": "ей",
+    "(ea)": "и",
+    "(ou)": "ау",
+    "(ui)": "и",
     # U
-    'b(u)l': 'у',
-    'f(u)l': 'у',
-    'p(u)l': 'у',
-    'b(u)sh': 'у',
-    'f(u)sh': 'у',
-    'p(u)sh': 'у',
+    "b(u)l": "у",
+    "f(u)l": "у",
+    "p(u)l": "у",
+    "b(u)sh": "у",
+    "f(u)sh": "у",
+    "p(u)sh": "у",
     #'(u)': 'а',
-
     # consonant-le syllable
-    '#(le)': 'л',
-
+    "#(le)": "л",
     # открытый (немая е на конце)
-    '(a)#e$': 'эй',
-    '(o)#e$': 'оу',
-    '(e)#e$': 'и',
-    '(i)#e$': 'ай',
-    '(y)#e$': 'ай',
-    '(u)#e$': 'ю',
-
-    '&#(e)$': '',
-
+    "(a)#e$": "эй",
+    "(o)#e$": "оу",
+    "(e)#e$": "и",
+    "(i)#e$": "ай",
+    "(y)#e$": "ай",
+    "(u)#e$": "ю",
+    "&#(e)$": "",
     # Закрытый. 2.
-
     # Только 2 буквы в слове
-    '^(a)#$': 'э',
-    '^(о)#$': 'о',
-    '^(e)#$': ['е', 'э'],
-    '^(i)#$': 'и',
-    '^(u)#$': 'а',
-    '^(y)#$': 'и',
-
+    "^(a)#$": "э",
+    "^(о)#$": "о",
+    "^(e)#$": ["е", "э"],
+    "^(i)#$": "и",
+    "^(u)#$": "а",
+    "^(y)#$": "и",
     # Закрытый 3. Слог вида «гласная + r»
-    '#(a)r': 'а',
-    '#(o)r': 'о',
-    '#(e)r': 'ё',
-    '#(i)r': 'ё',
-    '#(y)r': 'ё',
-    '#(u)r': 'ё',
-
+    "#(a)r": "а",
+    "#(o)r": "о",
+    "#(e)r": "ё",
+    "#(i)r": "ё",
+    "#(y)r": "ё",
+    "#(u)r": "ё",
     # Закрытый 4. Слог вида «гласная + «r» + гласная»
-    '(a)r&': 'э',
-    '(o)r&': 'о',
-    '(e)r&': 'и',
-    '(i)r&': 'ай',
-    '(y)r&': 'ай',
-    '(u)r&': 'ю',
-
+    "(a)r&": "э",
+    "(o)r&": "о",
+    "(e)r&": "и",
+    "(i)r&": "ай",
+    "(y)r&": "ай",
+    "(u)r&": "ю",
     # Открытый слог. 1 тип
     #'(a)#&': 'эй',
     #'(o)#&': 'оу',
@@ -91,85 +81,67 @@ REPLACEMENTS = {
     #'(i)#&': 'ай',
     #'(y)#&': 'ай',
     #'(u)#&': 'ю',
-
     # Согласные
-    '(ck)': 'к',
-
+    "(ck)": "к",
     # б не читается
-    'm(b)$': '',
-    '(b)t$': '',
-
+    "m(b)$": "",
+    "(b)t$": "",
     # C перед e, i, y
-    '(c)e': ['с', 'ц'],
-    '(c)i': 'с',
-    '(c)y': 'с',
-
+    "(c)e": ["с", "ц"],
+    "(c)i": "с",
+    "(c)y": "с",
     # C в сочетаниях  -cion, -cial, -cian, -cean, -cient
-    '(c)ion': 'ш',
-    '(c)ial': 'ш',
-    '(c)ian': 'ш',
-    '(c)ean': 'ш',
-    '(c)ient': 'ш',
-
-    'r(ch)$': 'к',
-    '(ch)': 'ч',
-
+    "(c)ion": "ш",
+    "(c)ial": "ш",
+    "(c)ian": "ш",
+    "(c)ean": "ш",
+    "(c)ient": "ш",
+    "r(ch)$": "к",
+    "(ch)": "ч",
     # D не произносится в nd / dn
     #'n(d)': '',
     #'(d)n': '',
-
     # G иключения перед i/e/y
-    '^(g)ive': 'г',
-    '^(g)et': 'г',
-    'o(gg)y': 'гг',
-
+    "^(g)ive": "г",
+    "^(g)et": "г",
+    "o(gg)y": "гг",
     # G перед i/e/y
-    '(g)i': 'дж',
-    '(g)e': 'дж',
-    '(g)y': 'дж',
-
+    "(g)i": "дж",
+    "(g)e": "дж",
+    "(g)y": "дж",
     # Gh на конце
-    '(gh)$': 'ф',
-
+    "(gh)$": "ф",
     # G в сочетаниях gh gn
-    '(g)n': '',
-    '(g)h': '',
-
+    "(g)n": "",
+    "(g)h": "",
     # K 	не произносится в сочетании kn
-    '(k)n': 'н',
-
+    "(k)n": "н",
     # Q
-    '(que)$': 'к',  # technique
-    '(qu)': 'кв',  # quality
-
+    "(que)$": "к",  # technique
+    "(qu)": "кв",  # quality
     # S
-    '&(s)&': 'з',  # user
-
-    '(sh)': 'ш',
-    '&(s)ure': 'ж',  # leisure
-    '&(s)ion': 'ж',
-    '(s)ure': 'ш',  # sure, assure
-    '(s)ion': 'ш',
-
+    "&(s)&": "з",  # user
+    "(sh)": "ш",
+    "&(s)ure": "ж",  # leisure
+    "&(s)ion": "ж",
+    "(s)ure": "ш",  # sure, assure
+    "(s)ion": "ш",
     # Th
-    '(th)$': 'с',  # filth, twentieth
-    '#(th)': 'с',
-    '(th)': 'з',
-    '(th)&': 'з',
-    '&(th)&': 'з',
-    's(t)ion': 'шч',
-    '(t)ion': 'ш',
-    '(t)ure': 'ч',
-    '(t)ural': 'ч',
-    '(t)ury': 'ч',
-
+    "(th)$": "с",  # filth, twentieth
+    "#(th)": "с",
+    "(th)": "з",
+    "(th)&": "з",
+    "&(th)&": "з",
+    "s(t)ion": "шч",
+    "(t)ion": "ш",
+    "(t)ure": "ч",
+    "(t)ural": "ч",
+    "(t)ury": "ч",
     # Y
-    '^(y)': 'й',
-    '(y)o': 'ё',  # beyond
-
+    "^(y)": "й",
+    "(y)o": "ё",  # beyond
     # Z
-    '(z)ure': 'ж',  # seizure
-
+    "(z)ure": "ж",  # seizure
     # Unsorted
     #'(ain)': 'эйн',
     #'(ack)': 'эк',
@@ -179,34 +151,33 @@ REPLACEMENTS = {
     #'(un)': 'ан',
     #'(se)': 'с',
     #'(re)': 'р',
-
     # Defaults
-    '(a)': 'а',
-    '(b)': 'б',
-    '(c)': 'к',
-    '(d)': 'д',
-    '(e)': 'е',
-    '(f)': 'ф',
-    '(g)': 'г',
-    '(h)': 'х',
-    '(i)': 'и',
-    '(j)': 'дж',
-    '(k)': 'к',
-    '(l)': 'л',
-    '(m)': 'м',
-    '(n)': 'н',
-    '(o)': 'о',
-    '(p)': 'п',
-    '(q)': 'к',
-    '(r)': 'р',
-    '(s)': 'с',
-    '(t)': 'т',
-    '(u)': 'а',
-    '(v)': 'в',
-    '(w)': 'в',
-    '(x)': 'кс',
-    '(y)': 'и',
-    '(z)': 'з',
+    "(a)": "а",
+    "(b)": "б",
+    "(c)": "к",
+    "(d)": "д",
+    "(e)": "е",
+    "(f)": "ф",
+    "(g)": "г",
+    "(h)": "х",
+    "(i)": "и",
+    "(j)": "дж",
+    "(k)": "к",
+    "(l)": "л",
+    "(m)": "м",
+    "(n)": "н",
+    "(o)": "о",
+    "(p)": "п",
+    "(q)": "к",
+    "(r)": "р",
+    "(s)": "с",
+    "(t)": "т",
+    "(u)": "а",
+    "(v)": "в",
+    "(w)": "в",
+    "(x)": "кс",
+    "(y)": "и",
+    "(z)": "з",
 }
 
 RULES: dict[int, dict] = {
@@ -219,8 +190,7 @@ RULES: dict[int, dict] = {
 }
 
 
-
-Match = namedtuple('Match', ('group_start', 'group_end'), defaults=(-1, -1))
+Match = namedtuple("Match", ("group_start", "group_end"), defaults=(-1, -1))
 
 
 def match_rule(text: str, rule: str, start: int = 0) -> Optional[Match]:
@@ -229,62 +199,56 @@ def match_rule(text: str, rule: str, start: int = 0) -> Optional[Match]:
     group_end = -1
     r = next(rule_it)
 
-    if r == '^':
+    if r == "^":
         if start != 0:
             return None
         r = next(rule_it)
 
-    if r == '(':
+    if r == "(":
         group_start = start
         r = next(rule_it)
 
     for i in range(start, len(text)):
         ch = text[i]
-        if r == '#':
+        if r == "#":
             if ch not in CONSONANTS:
                 return None
-        elif r == '&':
+        elif r == "&":
             if ch not in WOVELS:
                 return None
-        elif r == '.':
+        elif r == ".":
             pass
-        elif r == '^':
+        elif r == "^":
             if i != 0:
                 return None
-        elif r == '$':
+        elif r == "$":
             if i != len(text) - 1:
                 return None
         elif r != ch:
             return None
         try:
             r = next(rule_it)
-            if r == '(':
+            if r == "(":
                 group_start = i + 1
                 r = next(rule_it)
-            if r == ')':
+            if r == ")":
                 group_end = i + 1
                 r = next(rule_it)
-            if r == '$':
+            if r == "$":
                 if i != len(text) - 1:
                     return None
         except StopIteration:
-            return Match(
-                group_start=group_start,
-                group_end=group_end
-            )
+            return Match(group_start=group_start, group_end=group_end)
 
-    if r == '$':
-        return Match(
-            group_start=group_start,
-            group_end=group_end
-        )
+    if r == "$":
+        return Match(group_start=group_start, group_end=group_end)
     return None
 
 
 def expand(ch: str) -> Iterable[str]:
-    if ch == '#':
+    if ch == "#":
         yield from CONSONANTS
-    elif ch == '&':
+    elif ch == "&":
         yield from WOVELS
     else:
         yield ch
@@ -292,7 +256,7 @@ def expand(ch: str) -> Iterable[str]:
 
 def expand_rule(rule: str) -> Iterable[str]:
     for combination in itertools.product(*(expand(ch) for ch in rule)):
-        yield ''.join(combination)
+        yield "".join(combination)
 
 
 """
@@ -304,6 +268,7 @@ for _k, _v in REPLACEMENTS.items():
         RULES[len(_r)][_r] = _v
 """
 
+
 def _resolve_replacement(replacement: str, sub: str) -> str:
     def _it():
         for i, ch in enumerate(replacement):
@@ -311,7 +276,8 @@ def _resolve_replacement(replacement: str, sub: str) -> str:
                 yield sub[int(ch)]
             else:
                 yield ch
-    return ''.join(_it())
+
+    return "".join(_it())
 
 
 def replace_with_rules(text: str):
@@ -321,21 +287,22 @@ def replace_with_rules(text: str):
         if window_size <= n:
             i = 0
             while i <= n - window_size + 1:
-                sub = text[i:i+window_size]
+                sub = text[i : i + window_size]
                 replacement = replacements.get(sub)
 
                 if replacement:
                     if isinstance(replacement, list):
                         replacement = replacement[0]
                     replacement = _resolve_replacement(replacement, sub)
-                    text = ''.join((text[:i], replacement, text[i+window_size:]))
+                    text = "".join((text[:i], replacement, text[i + window_size :]))
                 else:
                     i += 1
     return text
 
 
 import re
-_TOKEN_RE = re.compile(r'[\w\d]+')
+
+_TOKEN_RE = re.compile(r"[\w\d]+")
 
 
 def tokenize(text: str) -> Iterable[str]:
@@ -355,15 +322,15 @@ def replace_with_rules_2(text: str) -> str:
                         replacement = replacement[0]
                     matches[match.group_start] = replacement
                     for j in range(match.group_start + 1, match.group_end):
-                        matches[j] = ''
-    return ''.join(m for m in matches if m is not None)
+                        matches[j] = ""
+    return "".join(m for m in matches if m is not None)
 
 
 def en2ru(text: str) -> str:
     results_tokens = []
     for token in tokenize(text):
         results_tokens.append(replace_with_rules_2(token.lower()))
-    return ' '.join(results_tokens)
+    return " ".join(results_tokens)
 
 
 def _test():
@@ -417,12 +384,12 @@ def _test():
     GoldFish Brain
     Waronoi
     """
-    for p in phrases.split('\n'):
+    for p in phrases.split("\n"):
         p = p.strip()
         if p:
             ru = en2ru(p)
-            print(f'{p} -> {ru}')
+            print(f"{p} -> {ru}")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     _test()

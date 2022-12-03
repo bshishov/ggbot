@@ -1,7 +1,4 @@
-__all__ = [
-    'ItemsIds',
-    'PermanentBuffIds'
-]
+__all__ = ["ItemsIds", "PermanentBuffIds"]
 
 
 class ItemsIds:

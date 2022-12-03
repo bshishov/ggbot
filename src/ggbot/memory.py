@@ -5,12 +5,7 @@ import pickledb
 from .context import Context, BotContext, IValue, IVariable
 from .component import BotComponent
 
-__all__ = [
-    'BaseStorage',
-    'DictStorage',
-    'PickleDbStorage',
-    'Memory'
-]
+__all__ = ["BaseStorage", "DictStorage", "PickleDbStorage", "Memory"]
 
 
 class BaseStorage:
@@ -39,7 +34,7 @@ class DictStorage(BaseStorage):
 
 
 class PickleDbStorage(BaseStorage):
-    def __init__(self, filename: set = 'storage.db'):
+    def __init__(self, filename: set = "storage.db"):
         self.db = pickledb.load(filename, auto_dump=True)
 
     def get(self, key: str) -> Optional[Any]:
@@ -57,32 +52,33 @@ class Memory(BotComponent):
         self.storage = storage
 
     async def init(self, context: BotContext):
-        context.template_env.globals['has_memory'] = self.storage.contains_key
-        context.template_env.globals['set_memory'] = self.storage.set
-        context.template_env.globals['get_memory'] = self.storage.get
+        context.template_env.globals["has_memory"] = self.storage.contains_key
+        context.template_env.globals["set_memory"] = self.storage.set
+        context.template_env.globals["get_memory"] = self.storage.get
 
     def save_global_var(self, key: str, value: str):
         async def _fn(context: Context):
             nonlocal self
             self.storage.set(
-                key=context.render_template(key),
-                value=context.render_template(value)
+                key=context.render_template(key), value=context.render_template(value)
             )
             return True
+
         return _fn
 
     def check_global_var_exists(self, key: str):
         async def _fn(context: Context):
             nonlocal self
             return self.storage.contains_key(context.render_template(key))
+
         return _fn
 
     def set_user_var(self, key: str, value: str):
         async def _fn(context: Context):
             nonlocal self
             self.storage.set(
-                key=context.render_template(f'{context.author.member.id}-{key}'),
-                value=context.render_template(value)
+                key=context.render_template(f"{context.author.member.id}-{key}"),
+                value=context.render_template(value),
             )
             return True
 
@@ -91,25 +87,28 @@ class Memory(BotComponent):
     def check_user_var_exists(self, key: str):
         async def _fn(context: Context):
             nonlocal self
-            return self.storage.contains_key(f'{context.author.member.id}-{key}')
+            return self.storage.contains_key(f"{context.author.member.id}-{key}")
+
         return _fn
 
     def copy_user_var_to_local(self, key: str, target_var: IVariable):
         async def _fn(context: Context):
             nonlocal self
-            user_key = f'{context.author.member.id}-{key}'
+            user_key = f"{context.author.member.id}-{key}"
             if self.storage.contains_key(user_key):
                 context.set_variable(target_var, self.storage.get(user_key))
                 return True
             return False
+
         return _fn
 
     def set_user_var_from(self, key: str, value: IValue):
         async def _fn(context: Context):
             nonlocal self
             self.storage.set(
-                key=context.render_template(f'{context.author.member.id}-{key}'),
-                value=value.evaluate(context)
+                key=context.render_template(f"{context.author.member.id}-{key}"),
+                value=value.evaluate(context),
             )
             return True
+
         return _fn

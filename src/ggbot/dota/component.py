@@ -3,10 +3,10 @@ import re
 import logging
 import time
 import aiohttp
+import ctor
 
 from attr import dataclass
 
-from spec import spec
 from ggbot.context import BotContext, Context, IVariable, IValue
 from ggbot.component import BotComponent
 from ggbot.assets import *
@@ -19,46 +19,42 @@ from ggbot.bttypes import *
 
 
 __all__ = [
-    'DOTA_MATCH',
-    'DOTA_MATCH_PLAYER',
-    'DOTA_PLAYER_RANKING',
-    'DOTA_HERO_MATCHUP',
-    'DOTA_PLAYER_MEDAL',
-    'OPENDOTA_API_URL',
-    'Dota',
-    'RequestOpenDotaAction',
-    'RequestPlayerRankings',
-    'RequestTopHeroMatchups',
-    'CountMatchupsAction',
-    'GeneratePhraseForPlayer',
-    'parse_steam_id_from_message',
-    'RequestMatch',
-    'FetchLastMatchId',
-    'CheckMatchIsParsed',
-    'RequestParseMatch',
-    'CalculateMedals',
-    'AssignPlayerMedals',
-    'FormattedMedals',
-    'MedalFromId',
-    'HeroName',
-    'MatchPlayer',
-    'MatchDurationMinutes',
-    'PlayerHeroId',
-    'MatchPlayerResultString',
-    'PlayerHeroIconUrl',
-    'CheckSecondsSinceRecentMatchGreaterThan'
+    "DOTA_MATCH",
+    "DOTA_MATCH_PLAYER",
+    "DOTA_PLAYER_RANKING",
+    "DOTA_HERO_MATCHUP",
+    "DOTA_PLAYER_MEDAL",
+    "OPENDOTA_API_URL",
+    "Dota",
+    "RequestOpenDotaAction",
+    "RequestPlayerRankings",
+    "RequestTopHeroMatchups",
+    "CountMatchupsAction",
+    "GeneratePhraseForPlayer",
+    "parse_steam_id_from_message",
+    "RequestMatch",
+    "FetchLastMatchId",
+    "CheckMatchIsParsed",
+    "RequestParseMatch",
+    "CalculateMedals",
+    "AssignPlayerMedals",
+    "FormattedMedals",
+    "MedalFromId",
+    "HeroName",
+    "MatchPlayer",
+    "MatchDurationMinutes",
+    "PlayerHeroId",
+    "MatchPlayerResultString",
+    "PlayerHeroIconUrl",
+    "CheckSecondsSinceRecentMatchGreaterThan",
 ]
 
 _logger = logging.getLogger(__name__)
 
 
-SKILL_BRACKETS = {
-    '1': 'Normal',
-    '2': 'High',
-    '3': 'Very High'
-}
+SKILL_BRACKETS = {"1": "Normal", "2": "High", "3": "Very High"}
 
-OPENDOTA_API_URL = 'https://api.opendota.com/api/'
+OPENDOTA_API_URL = "https://api.opendota.com/api/"
 DOTA_MATCH = make_struct_from_python_type(DotaMatch)
 DOTA_MATCH_PLAYER = make_struct_from_python_type(Player)
 DOTA_PLAYER_RANKING = make_struct_from_python_type(PlayerRanking)
@@ -86,7 +82,7 @@ class HeroesCollection(IndexedCollection[dict]):
     @local_time_cache(5 * 60)
     def data(self):
         data = self.asset.get_data()
-        return {h['id']: h for h in data}
+        return {h["id"]: h for h in data}
 
     def iter_items(self) -> Iterable[dict]:
         yield from self.data.values()
@@ -102,22 +98,24 @@ class Dota(BotComponent):
     def __init__(self, opendota_api_key: str, phrase_generator: PhraseGenerator):
         self.api_key = opendota_api_key
         self.heroes = HeroesCollection(
-            JsonAsset(Cached(UrlSource(f'{OPENDOTA_API_URL}heroes')))
+            JsonAsset(Cached(UrlSource(f"{OPENDOTA_API_URL}heroes")))
         )
         self.phrase_generator = phrase_generator
 
     def hero_id_to_name(self, id: int):
-        return self.heroes.get_item_by_index(id)['name']
+        return self.heroes.get_item_by_index(id)["name"]
 
     def hero_id_to_localized_name(self, id: int):
-        return self.heroes.get_item_by_index(id)['localized_name']
+        return self.heroes.get_item_by_index(id)["localized_name"]
 
     async def init(self, context: BotContext):
-        context.template_env.filters['dota_hero_id_to_name'] = self.hero_id_to_name
-        context.template_env.filters['dota_hero_id_to_localized_name'] = self.hero_id_to_localized_name
-        context.template_env.filters['dota_skill_id_to_name'] = skill_id_to_name
-        context.template_env.filters['dota_slot_is_radiant'] = player_slot_is_radiant
-        context.template_env.filters['dota_slot_is_dire'] = player_slot_is_dire
+        context.template_env.filters["dota_hero_id_to_name"] = self.hero_id_to_name
+        context.template_env.filters[
+            "dota_hero_id_to_localized_name"
+        ] = self.hero_id_to_localized_name
+        context.template_env.filters["dota_skill_id_to_name"] = skill_id_to_name
+        context.template_env.filters["dota_slot_is_radiant"] = player_slot_is_radiant
+        context.template_env.filters["dota_slot_is_dire"] = player_slot_is_dire
 
 
 @dataclass
@@ -131,12 +129,15 @@ class RequestOpenDotaAction:
     async def __call__(self, context: Context) -> bool:
         query = self.query.evaluate(context)
         async with aiohttp.ClientSession() as session:
-            response = await session.get(f'{OPENDOTA_API_URL}{query}', params={
-                'api_key': self.api_key,
-            })
+            response = await session.get(
+                f"{OPENDOTA_API_URL}{query}",
+                params={
+                    "api_key": self.api_key,
+                },
+            )
             result = await response.json()
-            _logger.debug(f'Received data url={response.url} response={result}')
-            context.local['result'] = result
+            _logger.debug(f"Received data url={response.url} response={result}")
+            context.local["result"] = result
 
             if response.status == 200:
                 return True
@@ -145,20 +146,19 @@ class RequestOpenDotaAction:
 
 @dataclass
 class CountMatchupsAction:
-
     async def __call__(self, context: Context) -> bool:
-        result = context.local['result']
+        result = context.local["result"]
         total_games_played = 0
 
         for item in result:
-            item['winrate'] = item['wins'] / item['games_played']
-            total_games_played += item['games_played']
+            item["winrate"] = item["wins"] / item["games_played"]
+            total_games_played += item["games_played"]
 
         avg_games_played = total_games_played / len(result)
-        result = (x for x in result if x['games_played'] >= avg_games_played)
+        result = (x for x in result if x["games_played"] >= avg_games_played)
 
-        result = list(sorted(result, key=lambda x: x['winrate'], reverse=True))
-        context.local['result'] = result
+        result = list(sorted(result, key=lambda x: x["winrate"], reverse=True))
+        context.local["result"] = result
         return True
 
 
@@ -176,21 +176,21 @@ class GeneratePhraseForPlayer:
     async def __call__(self, context: Context) -> bool:
         player = self.match_player.evaluate(context)
         hero_name = self.dota.hero_id_to_localized_name(player.hero_id)
-        match_data = spec.dump(player)  # backwards compatibility
+        match_data = ctor.dump(player)  # backwards compatibility
 
         phrase = self.phrase_generator.generate_phrase(
             match=match_data,
             player_name=context.author.member.display_name,
-            hero_name=hero_name
+            hero_name=hero_name,
         )
         context.set_variable(self.result, phrase)
         return True
 
 
 STEAM_ID_REGEXES = (
-    re.compile(r'dotabuff.com/players/(\d+)'),
-    re.compile(r'opendota.com/players/(\d+)'),
-    re.compile(r'(\d+)'),
+    re.compile(r"dotabuff.com/players/(\d+)"),
+    re.compile(r"opendota.com/players/(\d+)"),
+    re.compile(r"(\d+)"),
 )
 
 
@@ -218,6 +218,7 @@ def parse_steam_id_from_message(target_variable: IVariable[int]):
 
         context.set_variable(target_variable, steam_id)
         return True
+
     return _fn
 
 
@@ -259,8 +260,10 @@ class RequestPlayerRankings:
     async def __call__(self, context: Context) -> bool:
         steam_id = self.steam_id.evaluate(context)
         rankings = await self.api.get_player_rankings(steam_id)
-        rankings = sorted(rankings, key=lambda ranking: ranking.percent_rank, reverse=False)
-        context.set_variable(self.result, rankings[:self.limit])
+        rankings = sorted(
+            rankings, key=lambda ranking: ranking.percent_rank, reverse=False
+        )
+        context.set_variable(self.result, rankings[: self.limit])
         return True
 
 
@@ -289,7 +292,7 @@ class RequestTopHeroMatchups:
 
         avg_games_played = total_games_played / len(result)
         result = (x for x in result if x.games_played >= avg_games_played)
-        result = list(sorted(result, key=_win_rate, reverse=True))[:self.limit]
+        result = list(sorted(result, key=_win_rate, reverse=True))[: self.limit]
         context.set_variable(self.result, result)
         return True
 
@@ -338,7 +341,9 @@ class RequestMatch:
         if not match_id:
             return False
 
-        match = await self.api.get_match(match_id, cache_lifetime=self.use_cached_if_younger_than)
+        match = await self.api.get_match(
+            match_id, cache_lifetime=self.use_cached_if_younger_than
+        )
         context.set_variable(self.result, match)
         return True
 
@@ -448,9 +453,9 @@ class FormattedMedals(IValue[str]):
         assert ARRAY(DOTA_PLAYER_MEDAL).can_accept(self.medals_ids.get_return_type())
 
     def evaluate(self, context: Context) -> str:
-        result = ''
+        result = ""
         for medal in self.medals_ids.evaluate(context):
-            result += f'{medal.icon} **{medal.name}** *{medal.description}*\n'
+            result += f"{medal.icon} **{medal.name}** *{medal.description}*\n"
         return result
 
     def get_return_type(self) -> IType:
@@ -469,11 +474,7 @@ class MedalFromId(IValue[PlayerMedal]):
         medal = PLAYER_MEDALS_DICT.get(medal_id)
         if medal:
             return medal
-        return PlayerMedal(
-            id='non-existent',
-            name='non-existent',
-            predicate=None
-        )
+        return PlayerMedal(id="non-existent", name="non-existent", predicate=None)
 
     def get_return_type(self) -> IType:
         return DOTA_PLAYER_MEDAL
@@ -554,8 +555,8 @@ class MatchPlayerResultString(IValue[str]):
     def evaluate(self, context: Context) -> str:
         player = self.player.evaluate(context)
         if player.isRadiant == player.radiant_win:
-            return 'Победа'
-        return 'Поражение'
+            return "Победа"
+        return "Поражение"
 
     def get_return_type(self) -> IType:
         return STRING
@@ -572,8 +573,7 @@ class PlayerHeroIconUrl(IValue[str]):
     def evaluate(self, context: Context) -> str:
         player = self.player.evaluate(context)
         hero_name = self.dota.hero_id_to_name(player.hero_id)[14:]
-        return f'https://cdn.origin.steamstatic.com/apps/dota2/images/heroes/{hero_name}_icon.png'
+        return f"https://cdn.origin.steamstatic.com/apps/dota2/images/heroes/{hero_name}_icon.png"
 
     def get_return_type(self) -> IType:
         return STRING
-

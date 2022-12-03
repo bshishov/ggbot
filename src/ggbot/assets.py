@@ -16,16 +16,16 @@ from aiohttp.typedefs import StrOrURL
 
 
 __all__ = [
-    'Source',
-    'FileSource',
-    'UrlSource',
-    'Cached',
-    'TextAsset',
-    'DictAsset',
-    'JsonAsset',
-    'YamlDictAsset',
-    'IndexedCollection',
-    'yaml_dict_from_file'
+    "Source",
+    "FileSource",
+    "UrlSource",
+    "Cached",
+    "TextAsset",
+    "DictAsset",
+    "JsonAsset",
+    "YamlDictAsset",
+    "IndexedCollection",
+    "yaml_dict_from_file",
 ]
 
 
@@ -39,13 +39,13 @@ class Source:
     def get_as_binary(self) -> bytes:
         raise NotImplementedError
 
-    def get_as_text(self, encoding: str = 'utf-8') -> str:
+    def get_as_text(self, encoding: str = "utf-8") -> str:
         raise NotImplementedError
 
     async def get_as_binary_async(self) -> bytes:
         return self.get_as_binary()
 
-    async def get_as_text_async(self, encoding: str = 'utf-8') -> str:
+    async def get_as_text_async(self, encoding: str = "utf-8") -> str:
         return self.get_as_text(encoding)
 
 
@@ -57,19 +57,19 @@ class FileSource(Source):
         return str(self.path.absolute())
 
     def get_as_binary(self) -> bytes:
-        return self.path.open('rb').read()
+        return self.path.open("rb").read()
 
-    def get_as_text(self, encoding: str = 'utf-8') -> str:
-        return self.path.open('r', encoding=encoding).read()
+    def get_as_text(self, encoding: str = "utf-8") -> str:
+        return self.path.open("r", encoding=encoding).read()
 
     def __repr__(self):
-        return f'{self.__class__.__name__}({self.path})>'
+        return f"{self.__class__.__name__}({self.path})>"
 
 
 @dataclass
 class UrlSource(Source):
     url: StrOrURL
-    method: str = 'GET'
+    method: str = "GET"
     request_kwargs: Dict[str, Any] = field(default_factory=dict)
 
     def get_uri(self) -> str:
@@ -79,15 +79,13 @@ class UrlSource(Source):
         response = requests.request(self.method, str(self.url), **self.request_kwargs)
         return response.content
 
-    def get_as_text(self, encoding: str = 'utf-8') -> str:
+    def get_as_text(self, encoding: str = "utf-8") -> str:
         return self.get_as_binary().decode(encoding)
 
     async def request(self, session: aiohttp.ClientSession):
-        _logger.debug(f'Performing {self.method} to {self.url}')
+        _logger.debug(f"Performing {self.method} to {self.url}")
         return await session.request(
-            method=self.method,
-            url=self.url,
-            **self.request_kwargs
+            method=self.method, url=self.url, **self.request_kwargs
         )
 
     async def get_as_binary_async(self) -> bytes:
@@ -95,13 +93,13 @@ class UrlSource(Source):
             response = await self.request(session)
             return await response.read()
 
-    async def get_as_text_async(self, encoding: str = 'utf-8') -> str:
+    async def get_as_text_async(self, encoding: str = "utf-8") -> str:
         async with aiohttp.ClientSession() as session:
             response = await self.request(session)
             return await response.text(encoding)
 
     def __repr__(self):
-        return f'<{self.__class__.__name__} {self.url}>'
+        return f"<{self.__class__.__name__} {self.url}>"
 
 
 def generate_id() -> str:
@@ -111,14 +109,14 @@ def generate_id() -> str:
 @dataclass
 class Cached(Source):
     source: Source
-    cache_dir: str = '.cache'
+    cache_dir: str = ".cache"
     lifetime_seconds: float = 24 * 60 * 60
 
     _cache_path: pathlib.Path = None
 
     def __post_init__(self):
         filename = hashlib.md5(self.source.get_uri().encode()).hexdigest()[:8]
-        self._cache_path = pathlib.Path(self.cache_dir, f'{filename}.dat')
+        self._cache_path = pathlib.Path(self.cache_dir, f"{filename}.dat")
         os.makedirs(self.cache_dir, exist_ok=True)
 
     def get_uri(self) -> str:
@@ -145,7 +143,7 @@ class Cached(Source):
         self._cache_path.write_bytes(contents)
         return contents
 
-    def get_as_text(self, encoding: str = 'utf-8') -> str:
+    def get_as_text(self, encoding: str = "utf-8") -> str:
         if self.valid_cache_exists:
             return self._cache_path.read_text(encoding=encoding)
 
@@ -161,7 +159,7 @@ class Cached(Source):
         self._cache_path.write_bytes(contents)
         return contents
 
-    async def get_as_text_async(self, encoding: str = 'utf-8') -> str:
+    async def get_as_text_async(self, encoding: str = "utf-8") -> str:
         if self.valid_cache_exists:
             return self._cache_path.read_text(encoding=encoding)
 
@@ -170,13 +168,13 @@ class Cached(Source):
         return contents
 
     def __repr__(self):
-        return f'<{self.__class__.__name__} {self.source!r}>'
+        return f"<{self.__class__.__name__} {self.source!r}>"
 
 
 @dataclass
 class TextAsset:
     source: Source
-    encoding: str = 'utf-8'
+    encoding: str = "utf-8"
 
     def get_content(self) -> str:
         return self.source.get_as_text(self.encoding)
@@ -224,7 +222,7 @@ class DictAsset(Mapping[str, Any]):
 @dataclass
 class JsonAsset:
     source: Source
-    encoding: str = 'utf-8'
+    encoding: str = "utf-8"
 
     def get_data(self) -> Dict[str, Any]:
         return json.loads(self.source.get_as_text(self.encoding))
@@ -233,17 +231,16 @@ class JsonAsset:
 @dataclass
 class YamlDictAsset(DictAsset):
     source: Source
-    encoding: str = 'utf-8'
+    encoding: str = "utf-8"
 
     def get_data(self) -> Dict[str, Any]:
         return yaml.full_load(self.source.get_as_text(self.encoding))
 
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 class IndexedCollection(Generic[T]):
-
     def iter_items(self) -> Iterable[T]:
         raise NotImplementedError
 

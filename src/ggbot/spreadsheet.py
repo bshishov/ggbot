@@ -7,10 +7,7 @@ from ggbot.assets import IndexedCollection
 from ggbot.utils import local_time_cache
 
 
-__all__ = [
-    'SpreadsheetTable',
-    'GoogleSpreadsheetsClient'
-]
+__all__ = ["SpreadsheetTable", "GoogleSpreadsheetsClient"]
 
 
 def trim_sequence(sequence: Iterable) -> Iterable:
@@ -32,7 +29,7 @@ class SpreadsheetTable(IndexedCollection[dict]):
 
     @local_time_cache(5 * 60)
     def _get_data(self):
-        values = self.worksheet.get_all_values()[self.first_row_index:]
+        values = self.worksheet.get_all_values()[self.first_row_index :]
         n_cols = len(self.header)
 
         if self.key_field is None:
@@ -55,7 +52,9 @@ class SpreadsheetTable(IndexedCollection[dict]):
         return len(self._get_data())
 
 
-def table_from_worksheet(worksheet: gspread.Worksheet, header: Optional[Tuple[str]] = None):
+def table_from_worksheet(
+    worksheet: gspread.Worksheet, header: Optional[Tuple[str]] = None
+):
     if header:
         return SpreadsheetTable(worksheet, header=header)
 
@@ -67,11 +66,15 @@ def table_from_worksheet(worksheet: gspread.Worksheet, header: Optional[Tuple[st
 class GoogleSpreadsheetsClient:
     client: gspread.Client
 
-    def get_table_by_title(self, spreadsheet_name: str, worksheet: str) -> IndexedCollection:
+    def get_table_by_title(
+        self, spreadsheet_name: str, worksheet: str
+    ) -> IndexedCollection:
         sheet = self.client.open(spreadsheet_name).worksheet(worksheet)
         return table_from_worksheet(sheet)
 
-    def get_table_by_key(self, spreadsheet_key: str, worksheet: str) -> IndexedCollection:
+    def get_table_by_key(
+        self, spreadsheet_key: str, worksheet: str
+    ) -> IndexedCollection:
         sheet = self.client.open_by_key(spreadsheet_key).worksheet(worksheet)
         return table_from_worksheet(sheet)
 
@@ -81,4 +84,6 @@ class GoogleSpreadsheetsClient:
 
     @classmethod
     def from_service_account_dict(cls, service_account: Dict):
-        return GoogleSpreadsheetsClient(gspread.service_account_from_dict(service_account))
+        return GoogleSpreadsheetsClient(
+            gspread.service_account_from_dict(service_account)
+        )

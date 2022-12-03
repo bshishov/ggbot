@@ -4,32 +4,36 @@ from decimal import Decimal
 from inspect import signature, isclass
 
 __all__ = [
-    'IType',
-    'TInternal',
-    'Serializable',
-    'NUMBER',
-    'STRING',
-    'NULL_TYPE',
-    'ONEOF',
-    'ARRAY',
-    'MAP',
-    'STRUCT',
-    'BOOLEAN',
-    'ANY',
-    'make_struct_from_python_type'
+    "IType",
+    "TInternal",
+    "Serializable",
+    "NUMBER",
+    "STRING",
+    "NULL_TYPE",
+    "ONEOF",
+    "ARRAY",
+    "MAP",
+    "STRUCT",
+    "BOOLEAN",
+    "ANY",
+    "make_struct_from_python_type",
 ]
 
-TInternal = TypeVar('TInternal')
-Serializable = Union[None, str, int, float, Dict[str, 'Serializable'], List['Serializable']]
+TInternal = TypeVar("TInternal")
+Serializable = Union[
+    None, str, int, float, Dict[str, "Serializable"], List["Serializable"]
+]
 InternalNumber = Union[int, float, Decimal]
 
 
 class IType(Generic[TInternal], metaclass=ABCMeta):
     @abstractmethod
-    def get_name(self) -> str: ...
+    def get_name(self) -> str:
+        ...
 
     @abstractmethod
-    def can_accept(self, other: 'IType') -> bool: ...
+    def can_accept(self, other: "IType") -> bool:
+        ...
 
     # @abstractmethod
     # def load(self, value: Serializable) -> TInternal: ...
@@ -43,7 +47,7 @@ class IType(Generic[TInternal], metaclass=ABCMeta):
 
 class _NumberType(IType[Decimal]):
     def get_name(self) -> str:
-        return 'Number'
+        return "Number"
 
     def can_accept(self, other: IType) -> bool:
         return isinstance(other, _NumberType)
@@ -51,7 +55,7 @@ class _NumberType(IType[Decimal]):
 
 class _StringType(IType[Decimal]):
     def get_name(self) -> str:
-        return 'String'
+        return "String"
 
     def can_accept(self, other: IType) -> bool:
         return isinstance(other, _StringType)
@@ -59,7 +63,7 @@ class _StringType(IType[Decimal]):
 
 class _BooleanType(IType[bool]):
     def get_name(self) -> str:
-        return 'Bool'
+        return "Bool"
 
     def can_accept(self, other: IType) -> bool:
         return isinstance(other, _BooleanType)
@@ -67,7 +71,7 @@ class _BooleanType(IType[bool]):
 
 class _NullType(IType[None]):
     def get_name(self) -> str:
-        return 'Null'
+        return "Null"
 
     def can_accept(self, other: IType) -> bool:
         return isinstance(other, _NullType)
@@ -75,21 +79,21 @@ class _NullType(IType[None]):
 
 class _AnyType(IType[Any]):
     def get_name(self) -> str:
-        return '*'
+        return "*"
 
     def can_accept(self, other: IType) -> bool:
         return True
 
 
 class _OneOfType(IType):
-    __slots__ = '_types'
+    __slots__ = "_types"
 
     def __init__(self, *types: IType):
         self._types = set(types)
 
     def get_name(self) -> str:
-        fmt = ', '.join(t.get_name() for t in self._types)
-        return f'OneOf<{fmt}>'
+        fmt = ", ".join(t.get_name() for t in self._types)
+        return f"OneOf<{fmt}>"
 
     def can_accept(self, other: IType) -> bool:
         if isinstance(other, _OneOfType):
@@ -106,7 +110,7 @@ def _make_oneof(first: IType, *rest: IType) -> _OneOfType:
 
 
 class _ArrayType(IType):
-    __slots__ = '_item_type'
+    __slots__ = "_item_type"
 
     def __init__(self, item_type: IType):
         self._item_type = item_type
@@ -115,23 +119,23 @@ class _ArrayType(IType):
         return self._item_type
 
     def get_name(self) -> str:
-        return f'Array<{self._item_type.get_name()}>'
+        return f"Array<{self._item_type.get_name()}>"
 
-    def can_accept(self, other: 'IType') -> bool:
+    def can_accept(self, other: "IType") -> bool:
         if isinstance(other, _ArrayType):
             return self._item_type.can_accept(other._item_type)
         return False
 
 
 class _MapType(IType):
-    __slots__ = '_k_type', '_v_type'
+    __slots__ = "_k_type", "_v_type"
 
     def __init__(self, key_type: IType, value_type: IType):
         self._k_type = key_type
         self._v_type = value_type
 
     def get_name(self) -> str:
-        return f'Map<{self._k_type.get_name()}, {self._v_type.get_name()}>'
+        return f"Map<{self._k_type.get_name()}, {self._v_type.get_name()}>"
 
     def get_key_type(self) -> IType:
         return self._k_type
@@ -139,17 +143,16 @@ class _MapType(IType):
     def get_value_type(self) -> IType:
         return self._v_type
 
-    def can_accept(self, other: 'IType') -> bool:
+    def can_accept(self, other: "IType") -> bool:
         if isinstance(other, _MapType):
-            return (
-                    self._k_type.can_accept(other._k_type)
-                    and self._v_type.can_accept(other._v_type)
+            return self._k_type.can_accept(other._k_type) and self._v_type.can_accept(
+                other._v_type
             )
         return False
 
 
 class _StructType(IType):
-    __slots__ = '_name', '_attributes'
+    __slots__ = "_name", "_attributes"
 
     def __init__(self, __struct_name: str, **attributes: IType):
         self._name = __struct_name
@@ -161,7 +164,7 @@ class _StructType(IType):
     def get_attr_type(self, attr: str) -> IType:
         return self._attributes[attr]
 
-    def can_accept(self, other: 'IType') -> bool:
+    def can_accept(self, other: "IType") -> bool:
         if isinstance(other, _StructType):
             return self._name == other._name and self._attributes == other._attributes
         return False
@@ -191,8 +194,8 @@ def _resolve_type_from_py_annotation(annotation) -> IType:
     elif annotation is type(None):
         return NULL_TYPE
 
-    origin = getattr(annotation, '__origin__', None)
-    args = getattr(annotation, '__args__', ())
+    origin = getattr(annotation, "__origin__", None)
+    args = getattr(annotation, "__args__", ())
 
     if origin is not None:
         if origin == Literal and len(args) == 1:
@@ -210,14 +213,14 @@ def _resolve_type_from_py_annotation(annotation) -> IType:
     if isclass(annotation):
         return make_struct_from_python_type(annotation)
 
-    raise TypeError(f'Cannot convert annotation {annotation} to type')
+    raise TypeError(f"Cannot convert annotation {annotation} to type")
 
 
 def make_struct_from_python_type(tp: Type) -> STRUCT:
     attrs = {}
     for param_name, param in signature(tp).parameters.items():
         attrs[param_name] = _resolve_type_from_py_annotation(param.annotation)
-    return STRUCT('PY:' + tp.__name__, **attrs)
+    return STRUCT("PY:" + tp.__name__, **attrs)
 
 
 def _test():
@@ -277,10 +280,10 @@ def _test():
 
     s = make_struct_from_python_type(A)
 
-    assert s.get_attr_type('a').can_accept(STRING)
-    assert s.get_attr_type('b').can_accept(MAP(STRING, NUMBER))
+    assert s.get_attr_type("a").can_accept(STRING)
+    assert s.get_attr_type("b").can_accept(MAP(STRING, NUMBER))
     print(s.get_name())
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     _test()

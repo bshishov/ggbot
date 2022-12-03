@@ -2,31 +2,31 @@ from typing import Optional, Union, Tuple
 import math
 
 __all__ = [
-    'FuzzySet',
-    'DiscreteFuzzySet',
-    'FuzzySetCompound',
-    'FuzzyUnion',
-    'FuzzyIntersection',
-    'FuzzyMultiply',
-    'FuzzySum',
-    'FuzzyNegate',
-    'MembershipFunction',
-    'ConstMf',
-    'TrapezoidalMf',
-    'TriangularMf',
-    'GaussianMf',
-    'Variable',
-    'ConditionStatement',
-    'Is',
-    'EqualsValue',
-    'ValueIsOneOf',
-    'And',
-    'Or',
-    'Not',
-    'Rules',
-    'R',
-    'plot_variable',
-    'iter_linear_space'
+    "FuzzySet",
+    "DiscreteFuzzySet",
+    "FuzzySetCompound",
+    "FuzzyUnion",
+    "FuzzyIntersection",
+    "FuzzyMultiply",
+    "FuzzySum",
+    "FuzzyNegate",
+    "MembershipFunction",
+    "ConstMf",
+    "TrapezoidalMf",
+    "TriangularMf",
+    "GaussianMf",
+    "Variable",
+    "ConditionStatement",
+    "Is",
+    "EqualsValue",
+    "ValueIsOneOf",
+    "And",
+    "Or",
+    "Not",
+    "Rules",
+    "R",
+    "plot_variable",
+    "iter_linear_space",
 ]
 
 
@@ -66,7 +66,7 @@ class FuzzySet:
         return self.sample(x)
 
     def __repr__(self):
-        return f'<{self.__class__.__name__}>'
+        return f"<{self.__class__.__name__}>"
 
 
 class DiscreteFuzzySet(FuzzySet):
@@ -147,7 +147,7 @@ class ConstMf(MembershipFunction):
         return self.value
 
     def __repr__(self):
-        return f'{self.__class__.__name__}({self.value!r})'
+        return f"{self.__class__.__name__}({self.value!r})"
 
 
 class TriangularMf(MembershipFunction):
@@ -166,7 +166,9 @@ class TriangularMf(MembershipFunction):
 
 
 class TrapezoidalMf(MembershipFunction):
-    def __init__(self, left: float, left_support: float, right_support: float, right: float):
+    def __init__(
+        self, left: float, left_support: float, right_support: float, right: float
+    ):
         self.left = left
         self.left_support = left_support
         self.right_support = right_support
@@ -183,11 +185,13 @@ class TrapezoidalMf(MembershipFunction):
         return 0.5 * self.right_support - 0.5 * self.left_support
 
     def __repr__(self):
-        return f'{self.__class__.__name__}(' \
-               f'{self.left!r}, ' \
-               f'{self.left_support!r}, ' \
-               f'{self.right_support!r}, ' \
-               f'{self.right!r})'
+        return (
+            f"{self.__class__.__name__}("
+            f"{self.left!r}, "
+            f"{self.left_support!r}, "
+            f"{self.right_support!r}, "
+            f"{self.right!r})"
+        )
 
 
 class GaussianMf(MembershipFunction):
@@ -196,21 +200,21 @@ class GaussianMf(MembershipFunction):
         self.std = std
 
     def sample(self, x):
-        return math.exp(-(x - self.mean) ** 2 / (2 * self.std ** 2))
+        return math.exp(-((x - self.mean) ** 2) / (2 * self.std**2))
 
     def center(self):
         return self.mean
 
     def __repr__(self):
-        return f'{self.__class__.__name__}({self.mean!r}, {self.std!r})'
+        return f"{self.__class__.__name__}({self.mean!r}, {self.std!r})"
 
 
 class Variable:
     def __init__(
-            self,
-            name: Optional[str] = None,
-            bounds: Tuple[float, float] = (0, 1),
-            **terms: MembershipFunction
+        self,
+        name: Optional[str] = None,
+        bounds: Tuple[float, float] = (0, 1),
+        **terms: MembershipFunction,
     ):
         self.membership_functions = terms
         self.name = name
@@ -284,7 +288,7 @@ class ConditionStatement:
         return And(self, other)
 
     def __repr__(self):
-        return f'<{self.__class__.__name__}>'
+        return f"<{self.__class__.__name__}>"
 
 
 class Is(ConditionStatement):
@@ -300,11 +304,11 @@ class Is(ConditionStatement):
 
     def __str__(self):
         mf_name = self._var.name_of_mf(self._mf)
-        return f'{self._var.name} IS {mf_name}'
+        return f"{self._var.name} IS {mf_name}"
 
     def __repr__(self):
         mf_name = self._var.name_of_mf(self._mf)
-        return f'<{self._var.name} IS {mf_name}>'
+        return f"<{self._var.name} IS {mf_name}>"
 
 
 class EqualsValue(ConditionStatement):
@@ -317,7 +321,7 @@ class EqualsValue(ConditionStatement):
         return float(value == self.expected)
 
     def __str__(self):
-        return f'{self.name} == {self.expected}'
+        return f"{self.name} == {self.expected}"
 
 
 class ValueIsOneOf(ConditionStatement):
@@ -330,7 +334,7 @@ class ValueIsOneOf(ConditionStatement):
         return float(value in self.expected)
 
     def __str__(self):
-        return f'{self.name} in {self.expected}'
+        return f"{self.name} in {self.expected}"
 
 
 class And(ConditionStatement):
@@ -343,11 +347,11 @@ class And(ConditionStatement):
 
     def __str__(self):
         operand_fmt = " AND ".join(map(str, self._operands))
-        return f'({operand_fmt})'
+        return f"({operand_fmt})"
 
     def __repr__(self):
         items_reps = ", ".join(map(repr, self._operands))
-        return f'{self.__class__.__name__}({items_reps})'
+        return f"{self.__class__.__name__}({items_reps})"
 
 
 class Or(ConditionStatement):
@@ -356,7 +360,7 @@ class Or(ConditionStatement):
 
     def __str__(self):
         operand_fmt = " OR ".join(map(str, self._operands))
-        return f'({operand_fmt})'
+        return f"({operand_fmt})"
 
     def evaluate(self, **kwargs):
         results = (op.evaluate(**kwargs) for op in self._operands)
@@ -373,10 +377,10 @@ class Not(ConditionStatement):
 
 class R:
     def __init__(
-            self,
-            var: Variable,
-            mf: Union[str, MembershipFunction],
-            when: ConditionStatement
+        self,
+        var: Variable,
+        mf: Union[str, MembershipFunction],
+        when: ConditionStatement,
     ):
         self.var = var
         self.mf = self.var.get_mf(mf)
@@ -386,7 +390,9 @@ class R:
         # Mamdani inference
         alpha = self.condition.evaluate(**kwargs)
         intersection = FuzzyIntersection(self.mf, ConstMf(alpha))
-        return intersection.calculate_centroid(x_min=self.var.bounds[0], x_max=self.var.bounds[1])
+        return intersection.calculate_centroid(
+            x_min=self.var.bounds[0], x_max=self.var.bounds[1]
+        )
 
     def __call__(self, **kwargs):
         return self.evaluate(**kwargs)

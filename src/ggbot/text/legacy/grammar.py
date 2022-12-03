@@ -6,28 +6,28 @@ import jinja2
 from jinja2.nativetypes import NativeEnvironment
 from Stemmer import Stemmer
 
-from ggbot.text.distance import damerau_levenshtein_distance
+from ggbot.text.legacy.distance import damerau_levenshtein_distance
 from ggbot.text.base import NluBase, IntentMatchResultBase
-from ggbot.text.tokenization import *
+from ggbot.text.legacy.tokenization import *
 from ggbot.utils import load_yamls
-from ggbot.text.slot_matching import *
+from ggbot.text.legacy.slot_matching import *
 
 
 __all__ = [
-    'Matcher',
-    'TGrammar',
-    'GrammarBasedNlu',
-    'GrammarBasedNluMatchResult',
-    'grammar_from_dict',
+    "Matcher",
+    "TGrammar",
+    "GrammarBasedNlu",
+    "GrammarBasedNluMatchResult",
+    "grammar_from_dict",
 ]
 
 
-STEMMER = Stemmer('russian')
+STEMMER = Stemmer("russian")
 JINJA_ENV = NativeEnvironment()
 
 
 def to_string(tokens: Iterable[Token]) -> str:
-    return ' '.join(t.raw for t in tokens)
+    return " ".join(t.raw for t in tokens)
 
 
 @dataclass
@@ -74,9 +74,11 @@ def validate_grammar(grammar: TGrammar):
         for rule in ruleset.rules:
             for t in rule.tokens:
                 if isinstance(t, RefToken):
-                    assert t.target in grammar, f'Invalid target {t.target} ' \
-                                                f'in rule: \'{to_string(rule.tokens)}\' ' \
-                                                f'in ruleset \'{ruleset.name}\''
+                    assert t.target in grammar, (
+                        f"Invalid target {t.target} "
+                        f"in rule: '{to_string(rule.tokens)}' "
+                        f"in ruleset '{ruleset.name}'"
+                    )
 
 
 tokenizer = Tokenizer(text_postprocessing_fn=lambda t: STEMMER.stemWord(t))
@@ -102,8 +104,10 @@ def grammar_from_dict(data: dict) -> TGrammar:
 
 
 def text_token_distance(t1: TextToken, t2: TextToken) -> float:
-    #return 1.0 - float(t1.text == t2.text)
-    return damerau_levenshtein_distance(t1.text, t2.text) / max(len(t1.text), len(t2.text))
+    # return 1.0 - float(t1.text == t2.text)
+    return damerau_levenshtein_distance(t1.text, t2.text) / max(
+        len(t1.text), len(t2.text)
+    )
 
 
 def iter_subsets(s, indices):
@@ -122,10 +126,10 @@ def iter_subsets(s, indices):
 
 class Matcher:
     def __init__(
-            self,
-            grammar: TGrammar,
-            slot_matchers: dict[str, BaseSlotMatcher],
-            default_slot_matcher: BaseSlotMatcher = AnySlotMatcher()
+        self,
+        grammar: TGrammar,
+        slot_matchers: dict[str, BaseSlotMatcher],
+        default_slot_matcher: BaseSlotMatcher = AnySlotMatcher(),
     ):
         self.grammar = grammar
         self.default_slot_matcher = default_slot_matcher
@@ -153,7 +157,9 @@ class Matcher:
                 if cache_key in self.cache:
                     match_distance, match_meta = self.cache.get(cache_key)
                 else:
-                    match_distance, match_meta = self.tokens_to_token_match(subset, rule_token)
+                    match_distance, match_meta = self.tokens_to_token_match(
+                        subset, rule_token
+                    )
                     self.cache[cache_key] = match_distance, match_meta
 
                 combination_distance += match_distance
@@ -167,12 +173,14 @@ class Matcher:
                     # Perfect match
                     break
 
-        best_meta['distance'] = best_distance
-        best_meta['rule'] = to_string(rule.tokens)
+        best_meta["distance"] = best_distance
+        best_meta["rule"] = to_string(rule.tokens)
         best_meta.update(rule.render_meta(best_meta))
         return best_distance / pattern_len, best_meta
 
-    def match_ruleset(self, tokens: tuple[TextToken], ruleset: RuleSet) -> tuple[float, dict]:
+    def match_ruleset(
+        self, tokens: tuple[TextToken], ruleset: RuleSet
+    ) -> tuple[float, dict]:
         best_distance = 100.0
         best_meta = {}
 
@@ -185,33 +193,31 @@ class Matcher:
                     # Perfect match
                     break
 
-        best_meta['ruleset'] = ruleset.name
+        best_meta["ruleset"] = ruleset.name
         return best_distance, best_meta
 
     def tokens_to_token_match(
-            self,
-            tokens: tuple[TextToken],
-            token: Token
+        self, tokens: tuple[TextToken], token: Token
     ) -> tuple[float, dict]:
         if isinstance(token, TextToken):
-            s1 = ' '.join(t.text for t in tokens)
+            s1 = " ".join(t.text for t in tokens)
             s2 = token.text
 
             if len(s1) > len(s2) * 2:
                 return 1.0, {}
 
-            #print(s1, s2)
+            # print(s1, s2)
             return damerau_levenshtein_distance(s1, s2) / max(len(s1), len(s2)), {}
-            #if len(tokens) > 1:
+            # if len(tokens) > 1:
             #    return 1.0, {}
-            #return text_token_distance(tokens[0], token), {}
+            # return text_token_distance(tokens[0], token), {}
         elif isinstance(token, SlotToken):
             slot_matcher = self.slot_matchers.get(token.type, self.default_slot_matcher)
             return slot_matcher.match(tokens)
         elif isinstance(token, RefToken):
             ruleset = self.grammar[token.target]
             return self.match_ruleset(tokens, ruleset)
-        raise TypeError(f'Unexpected token type: {type(token)}')
+        raise TypeError(f"Unexpected token type: {type(token)}")
 
 
 def iter_rule(rule: Rule, grammar: TGrammar) -> Iterable[Iterable[TextToken]]:
@@ -220,7 +226,7 @@ def iter_rule(rule: Rule, grammar: TGrammar) -> Iterable[Iterable[TextToken]]:
             if isinstance(_t, RefToken):
                 yield iter_ruleset(grammar[_t.target], grammar)
             else:
-                yield ((_t, ), None),
+                yield ((_t,), None),
 
     for combination in itertools.product(*_token_variants_gen()):
         result = []
@@ -240,7 +246,9 @@ def iter_rule(rule: Rule, grammar: TGrammar) -> Iterable[Iterable[TextToken]]:
     return
 
 
-def iter_ruleset(ruleset: RuleSet, grammar: TGrammar) -> Iterable[tuple[Iterable[TextToken], dict]]:
+def iter_ruleset(
+    ruleset: RuleSet, grammar: TGrammar
+) -> Iterable[tuple[Iterable[TextToken], dict]]:
     for rule in ruleset.rules:
         for combination in iter_rule(rule, grammar):
             yield combination
@@ -272,35 +280,30 @@ class GrammarBasedNluMatchResult(IntentMatchResultBase):
 
 
 class GrammarBasedNlu(NluBase):
-    def __init__(
-            self,
-            grammar: TGrammar,
-            matcher: Matcher = None
-    ):
+    def __init__(self, grammar: TGrammar, matcher: Matcher = None):
         self._matcher = matcher or Matcher(
             grammar,
             slot_matchers={
-                'float': FnSlotMatcher(float),
-                'int': FnSlotMatcher(int),
-                'email': EmailSlotMatcher(),
-                'mention': DiscordMentionMatcher(),
-                'text': AnySlotMatcher(),
+                "float": FnSlotMatcher(float),
+                "int": FnSlotMatcher(int),
+                "email": EmailSlotMatcher(),
+                "mention": DiscordMentionMatcher(),
+                "text": AnySlotMatcher(),
             },
-            default_slot_matcher=AnySlotMatcher()
+            default_slot_matcher=AnySlotMatcher(),
         )
         self._grammar = grammar
         self._intents = [
-            ruleset.name for ruleset in self._grammar.values()
-            if 'intent' in ruleset.name
+            ruleset.name
+            for ruleset in self._grammar.values()
+            if "intent" in ruleset.name
         ]
 
     def match_any_intent(self, text: str) -> Optional[IntentMatchResultBase]:
         return self.match_intent_one_of(text, self._intents)
 
     def match_intent_one_of(
-            self,
-            text: str,
-            intents: Iterable[str]
+        self, text: str, intents: Iterable[str]
     ) -> Optional[IntentMatchResultBase]:
         tokens = tokenize(text, parameters=False)
 
@@ -310,7 +313,9 @@ class GrammarBasedNlu(NluBase):
 
         for intent in intents:
             if intent in self._grammar:
-                distance, meta = self._matcher.match_ruleset(tokens, self._grammar[intent])
+                distance, meta = self._matcher.match_ruleset(
+                    tokens, self._grammar[intent]
+                )
                 if distance < best_distance:
                     best_distance = distance
                     best_meta = meta
@@ -322,15 +327,14 @@ class GrammarBasedNlu(NluBase):
             return None
 
         return GrammarBasedNluMatchResult(
-            intent=best_intent,
-            distance=best_distance,
-            meta=best_meta
+            intent=best_intent, distance=best_distance, meta=best_meta
         )
 
     @classmethod
-    def load(cls, path: str) -> 'GrammarBasedNlu':
+    def load(cls, path: str) -> "GrammarBasedNlu":
         import yaml
-        with open(path, 'r', encoding='utf-8') as fp:
+
+        with open(path, "r", encoding="utf-8") as fp:
             grammar = grammar_from_dict(yaml.full_load(fp))
             return GrammarBasedNlu(grammar)
 
@@ -340,16 +344,15 @@ def test():
     from ggbot.utils import benchmark
 
     grammar_data = load_yamls(
-        '../common/common.yaml',
-        '../common/datetime.yaml',
-        '../common/numbers.yaml',
-        '../common/money.yaml',
-        '../common/intents.yaml',
-
+        "../common/common.yaml",
+        "../common/datetime.yaml",
+        "../common/numbers.yaml",
+        "../common/money.yaml",
+        "../common/intents.yaml",
         # Custom
-        '../dota/grammar.yaml',
-        '../dota/heroes.yaml',
-        '../search/grammar.yaml',
+        "../dota/grammar.yaml",
+        "../dota/heroes.yaml",
+        "../search/grammar.yaml",
     )
 
     grammar = grammar_from_dict(grammar_data)
@@ -357,18 +360,18 @@ def test():
 
     nlu = GrammarBasedNlu(grammar=grammar)
 
-    #for k, r in grammar.items():
-     #   print(r)
+    # for k, r in grammar.items():
+    #   print(r)
 
-    phrase = '@gg-bot что собрать на войде в харде против ключника'
+    phrase = "@gg-bot что собрать на войде в харде против ключника"
     print(phrase)
     for i in range(3):  # Caching test
-        with benchmark('match-ruleset'):
+        with benchmark("match-ruleset"):
             match = nlu.match_any_intent(phrase)
     assert isinstance(match, GrammarBasedNluMatchResult)
-    print('{}'.format(match.distance))
+    print("{}".format(match.distance))
     print(yaml.dump(match.meta, allow_unicode=True))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     test()

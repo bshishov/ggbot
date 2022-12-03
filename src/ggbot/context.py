@@ -13,14 +13,14 @@ from ggbot import bttypes as types
 
 
 __all__ = [
-    'IVariable',
-    'IValue',
-    'StrOrTemplate',
-    'BotContext',
-    'UserContext',
-    'Context',
-    'MessageExpectation',
-    'Variable',
+    "IVariable",
+    "IValue",
+    "StrOrTemplate",
+    "BotContext",
+    "UserContext",
+    "Context",
+    "MessageExpectation",
+    "Variable",
 ]
 
 _logger = logging.getLogger(__name__)
@@ -31,22 +31,25 @@ def _generate_uuid() -> str:
 
 
 StrOrTemplate = Union[str, jinja2.Template]
-TVar = TypeVar('TVar')
+TVar = TypeVar("TVar")
 
-EMOJI_RE = re.compile(r':[^:\s]+:')
+EMOJI_RE = re.compile(r":[^:\s]+:")
 
 
 class IValue(Generic[TVar]):
     @abstractmethod
-    def evaluate(self, context: 'Context') -> TVar: ...
+    def evaluate(self, context: "Context") -> TVar:
+        ...
 
     @abstractmethod
-    def get_return_type(self) -> types.IType: ...
+    def get_return_type(self) -> types.IType:
+        ...
 
 
 class IVariable(IValue[TVar], metaclass=ABCMeta):
     @abstractmethod
-    def get_name(self) -> str: ...
+    def get_name(self) -> str:
+        ...
 
 
 @dataclass
@@ -59,21 +62,22 @@ class BotContext:
         return self.template_env.from_string(source)
 
     def normalize_emoji(self, emoji: str) -> str:
-        if emoji.startswith('<') and emoji.endswith('>'):
+        if emoji.startswith("<") and emoji.endswith(">"):
             # already normalized
             return emoji
 
-        emoji = emoji.strip(' \n\r\t:')
+        emoji = emoji.strip(" \n\r\t:")
 
         found: discord.Emoji = discord.utils.get(self.client.emojis, name=emoji)
         if found:
             return str(found)
 
-        return f':{emoji}:'
+        return f":{emoji}:"
 
     def resolve_emojis(self, message: str) -> str:
         def _norm_emoji(match: re.Match):
             return self.normalize_emoji(match.group(0))
+
         return re.sub(EMOJI_RE, _norm_emoji, message)
 
 
@@ -93,14 +97,16 @@ class MessageExpectation:
     def get_priority(self) -> float:
         raise NotImplementedError
 
-    async def can_be_satisfied(self, message: discord.Message, context: 'Context', nlu) -> bool:
+    async def can_be_satisfied(
+        self, message: discord.Message, context: "Context", nlu
+    ) -> bool:
         raise NotImplementedError
 
-    async def satisfy(self, message: discord.Message, context: 'Context'):
+    async def satisfy(self, message: discord.Message, context: "Context"):
         raise NotImplementedError
 
     def __repr__(self):
-        return f'<{self.__class__.__name__}>'
+        return f"<{self.__class__.__name__}>"
 
 
 @dataclass
@@ -116,17 +122,17 @@ class Context:
 
     def get_template_params(self):
         params = {
-            'ctx': self.name,
-            'bot': self.bot,
-            'message': self.message,
-            'user': self.author,
-            **self.local
+            "ctx": self.name,
+            "bot": self.bot,
+            "message": self.message,
+            "user": self.author,
+            **self.local,
         }
 
         if self.match is not None:
-            params['match'] = {
-                'intent': self.match.get_intent(),
-                'slots': self.match.get_all_slots()
+            params["match"] = {
+                "intent": self.match.get_intent(),
+                "slots": self.match.get_all_slots(),
             }
         return params
 
@@ -175,4 +181,3 @@ class Variable(IVariable[TVar]):
 
     def evaluate(self, context: Context) -> TVar:
         return context.get_var_value(self)
-

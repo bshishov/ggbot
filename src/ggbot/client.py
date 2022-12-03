@@ -7,7 +7,7 @@ from .conversation import *
 
 _logger = logging.getLogger(__name__)
 
-__all__ = ['Client']
+__all__ = ["Client"]
 
 
 class Client(discord.Client):
@@ -22,18 +22,18 @@ class Client(discord.Client):
         return False
 
     async def on_ready(self):
-        _logger.info('Ready')
+        _logger.info("Ready")
 
     async def on_message(self, message: discord.Message):
         if message.author == self.user:
             return
 
         if (
-                isinstance(message.channel, discord.DMChannel)
-                or message.channel.name == 'gg-bot-test'
-                or self.is_mentioned(message)
+            isinstance(message.channel, discord.DMChannel)
+            or message.channel.name == "gg-bot-test"
+            or self.is_mentioned(message)
         ):
-            _logger.debug('Handling mentioned message')
+            _logger.debug("Handling mentioned message")
             await self.cm.handle_mentioned_message(message)
 
     async def on_reaction_add(self, reaction: discord.Reaction, user: discord.User):

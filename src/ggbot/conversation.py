@@ -9,11 +9,7 @@ from ggbot.text import NluBase
 from ggbot.context import *
 
 
-__all__ = [
-    'ConversationManager',
-    'IntentHandler',
-    'ScenarioHandler'
-]
+__all__ = ["ConversationManager", "IntentHandler", "ScenarioHandler"]
 
 _logger = logging.getLogger(__name__)
 
@@ -49,14 +45,16 @@ async def try_run(coroutine):
 
 class ConversationManager:
     def __init__(
-            self,
-            nlu: NluBase,
-            intent_handlers: dict[str, IntentHandler],
-            context: BotContext,
+        self,
+        nlu: NluBase,
+        intent_handlers: dict[str, IntentHandler],
+        context: BotContext,
     ):
         self.nlu = nlu
         self.intent_handlers = intent_handlers
-        self.context_free_intents = [k for k in intent_handlers if k.startswith('intent')]
+        self.context_free_intents = [
+            k for k in intent_handlers if k.startswith("intent")
+        ]
         self.bot_context = context
         self.conversations = []  # type: List[ConversationTask]
 
@@ -85,30 +83,32 @@ class ConversationManager:
         if match is not None and match.get_confidence() > 0.49:
             intent = match.get_intent()
         else:
-            intent = 'mismatch'
+            intent = "mismatch"
 
-        _logger.info(f'Intent: {intent}')
+        _logger.info(f"Intent: {intent}")
         handler = self.get_handler(intent)
         if handler:
-            _logger.info(f'Starting new conversation with intent: {intent}')
+            _logger.info(f"Starting new conversation with intent: {intent}")
             context = Context(
                 bot=self.bot_context,
                 message=message,
                 author=UserContext(member=message.author),
-                match=match
+                match=match,
             )
 
             task = asyncio.create_task(try_run(handler.run(context)), name=context.name)
             dialog = ConversationTask(task=task, context=context)
             self.conversations.append(dialog)
 
-    async def handle_added_reaction(self, reaction: discord.Reaction, user: discord.User):
+    async def handle_added_reaction(
+        self, reaction: discord.Reaction, user: discord.User
+    ):
         # TODO: Add Reaction Expectation handling
         pass
 
     def get_handler(self, intent: str) -> Optional[IntentHandler]:
         if intent in self.intent_handlers:
             return self.intent_handlers[intent]
-        if 'no-handler' in self.intent_handlers:
-            return self.intent_handlers['no-handler']
+        if "no-handler" in self.intent_handlers:
+            return self.intent_handlers["no-handler"]
         return None
