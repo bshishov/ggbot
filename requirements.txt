@@ -1,6 +1,6 @@
 discord.py==1.7.0
 PyYAML==5.4.*
-Jinja2==2.11.*
+Jinja2
 requests>=2.25.0
 PyStemmer==2.0.1
 pickledb==0.9.2
