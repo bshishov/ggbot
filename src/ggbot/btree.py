@@ -5,7 +5,7 @@ import logging
 
 from jinja2 import Template
 
-from ggbot.bt.abc import Context, IExpression, IVariable
+from ggbot.context import Context, IExpression, IVariable
 from ggbot.bttypes import *
 
 
