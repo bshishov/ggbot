@@ -8,4 +8,4 @@ tokema==0.0.2
 gspread==3.7
 aiohttp
 ctor==0.3.5
-attrs
+attrs==23.2.0
