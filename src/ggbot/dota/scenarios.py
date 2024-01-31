@@ -418,10 +418,37 @@ def create_dota_scenario_handlers(
             always_fail(send_message_to_channel("Не удалось запросить инфу о матче")),
         ),
         selector(
-            CheckMatchIsParsed(last_match),
+            sequence(
+                log_value(Formatted("Запрашиваем матч {m}", m=last_match_id)),
+                RequestMatch(api=api, match_id=last_match_id, result=last_match),
+                CheckMatchIsParsed(last_match),
+                log("Матч распаршен, все ок"),
+            ),
+            sequence(
+                log_value(Formatted("Запрашиваем повтор {m}", m=last_match_id)),
+                send_message_to_channel(
+                    "Минутку, запрашивую у опендоты разбор матча..."
+                ),
+                RequestParseMatch(api=api, match_id=last_match_id),
+                retry_until_success(
+                    times=7,
+                    child=sequence(
+                        wait_time(60),  # Должно быть больше кеша
+                        RequestMatch(
+                            api=api,
+                            match_id=last_match_id,
+                            result=last_match,
+                            use_cached_if_younger_than=20,
+                        ),
+                        CheckMatchIsParsed(last_match),
+                    ),
+                ),
+                log("Делаем повторный запрос (должно загрузиться из кеша)"),
+                RequestMatch(api=api, match_id=last_match_id, result=last_match),
+            ),
             always_fail(
                 send_message_to_channel(
-                    "Этот матч не распаршен, зайди на опендоту и кликни анализ повтора"
+                    "Что-то разбор матча у опендоты занял больше обычного, что-то пошло не так"
                 )
             ),
         ),
