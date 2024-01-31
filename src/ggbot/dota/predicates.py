@@ -179,7 +179,7 @@ class _ParamQuery(IPlayerNumericParamQuery):
         ), f"No such player attribute: {self.attr}"
 
     def get_value(self, player: Player) -> float:
-        return getattr(player, self.attr)
+        return getattr(player, self.attr, 0) or 0
 
 
 @dataclass

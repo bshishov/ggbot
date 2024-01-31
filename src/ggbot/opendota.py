@@ -196,6 +196,7 @@ class Player:
     leaver_status: Optional[int] = None
     level: Optional[int] = None
     tower_damage: int = 0
+    courier_kills: int = 0
     xp_per_min: Optional[int] = None
     radiant_win: Optional[bool] = None
     start_time: Optional[int] = None
