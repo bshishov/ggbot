@@ -150,20 +150,21 @@ class PhraseGenerator:
         else:
             context["result"] = not is_radiant
 
-        ka = context["kills"] + context["assists"]
-        d = context["deaths"]
+        k = context.get("kills", 0)
+        a = context.get("assists", 0)
+        d = context.get("deaths", 0)
+        ka = k + a
+
         if d > 0:
             context["kda"] = ka / d
         else:
             context["kda"] = ka
 
-        duration_minutes = context["duration"] / 60.0
-        context["kills_per_min"] = context["kills"] / duration_minutes
-        context["deaths_per_min"] = context["deaths"] / duration_minutes
-        context["assists_per_min"] = context["assists"] / duration_minutes
-        context["ka_per_min"] = (
-            context["kills"] + context["assists"]
-        ) / duration_minutes
+        duration_minutes = context.get("duration", 0) / 60.0
+        context["kills_per_min"] = k / duration_minutes
+        context["deaths_per_min"] = d / duration_minutes
+        context["assists_per_min"] = a / duration_minutes
+        context["ka_per_min"] = (k + a) / duration_minutes
 
         population = []
         for phrase_rule in self.phrase_rules:
