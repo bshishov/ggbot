@@ -20,6 +20,16 @@ async def test_recent_match():
     match = await opendota.get_match(last_match_id)
 
 
+@pytest.mark.skipif(OPENDOTA_API_KEY is None, reason="No OPENDOTA_API_KEY env specified")
+@pytest.mark.asyncio
+async def test_weird_match_player_dump():
+    opendota = OpenDotaApi(OPENDOTA_API_KEY)
+    match = await opendota.get_match(7563482690)
+    for player in match.players:
+        data = ctor.dump(player)
+        print(data)
+
+
 def test_opendota_parse_recent_matches():
     data = json.loads(RECENT_MATCHES_DATA)
     ctor.load(list[PlayerRecentMatch], data)

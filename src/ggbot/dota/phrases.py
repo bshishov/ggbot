@@ -2,7 +2,7 @@ from typing import Optional, List
 import random
 import logging
 
-from dataclasses import dataclass
+from attr import dataclass, asdict
 
 import ctor
 
@@ -141,31 +141,33 @@ class PhraseGenerator:
     ) -> Optional[str]:
         is_radiant = player.player_slot < 128
         radiant_win = player.radiant_win is True
-        match = _PLAYER_CONVERTER.dump(player, _CTX)
+        context = asdict(player)
 
-        match["player"] = player_name.lower()
+        context["player"] = player_name.lower()
 
         if radiant_win:
-            match["result"] = is_radiant
+            context["result"] = is_radiant
         else:
-            match["result"] = not is_radiant
+            context["result"] = not is_radiant
 
-        ka = match["kills"] + match["assists"]
-        d = match["deaths"]
+        ka = context["kills"] + context["assists"]
+        d = context["deaths"]
         if d > 0:
-            match["kda"] = ka / d
+            context["kda"] = ka / d
         else:
-            match["kda"] = ka
+            context["kda"] = ka
 
-        duration_minutes = match["duration"] / 60.0
-        match["kills_per_min"] = match["kills"] / duration_minutes
-        match["deaths_per_min"] = match["deaths"] / duration_minutes
-        match["assists_per_min"] = match["assists"] / duration_minutes
-        match["ka_per_min"] = (match["kills"] + match["assists"]) / duration_minutes
+        duration_minutes = context["duration"] / 60.0
+        context["kills_per_min"] = context["kills"] / duration_minutes
+        context["deaths_per_min"] = context["deaths"] / duration_minutes
+        context["assists_per_min"] = context["assists"] / duration_minutes
+        context["ka_per_min"] = (
+            context["kills"] + context["assists"]
+        ) / duration_minutes
 
         population = []
         for phrase_rule in self.phrase_rules:
-            res = phrase_rule.condition.evaluate(**match) * phrase_rule.weight
+            res = phrase_rule.condition.evaluate(**context) * phrase_rule.weight
 
             if res > self.threshold:
                 phrase = phrase_rule.phrase_template.format(
