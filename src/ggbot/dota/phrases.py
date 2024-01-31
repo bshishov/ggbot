@@ -4,9 +4,12 @@ import logging
 
 from dataclasses import dataclass
 
+import ctor
+
 from ggbot.fuzzy import *
 from ggbot.assets import *
 from ggbot.text.base import NluBase
+from ggbot.opendota import Player
 
 
 __all__ = ["build_rules", "parse_rules", "PhraseGenerator", "get_dota_variables"]
@@ -130,10 +133,11 @@ class PhraseGenerator:
     threshold: float = 0.1
 
     def generate_phrase(
-        self, match: dict, player_name: str, hero_name: str
+        self, match_id: int, player: Player, player_name: str, hero_name: str
     ) -> Optional[str]:
-        is_radiant = match["player_slot"] < 128
-        radiant_win = match["radiant_win"]
+        is_radiant = player.player_slot < 128
+        radiant_win = player.radiant_win is True
+        match = ctor.dump(player)
 
         match["player"] = player_name.lower()
 
@@ -173,7 +177,7 @@ class PhraseGenerator:
         population = population[:3]
 
         rnd = random.Random()
-        rnd.seed(match["match_id"])
+        rnd.seed(match_id)
         p, res = rnd.choice(population)
 
         _logger.debug(f"Selected: {p}")

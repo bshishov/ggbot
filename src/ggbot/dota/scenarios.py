@@ -161,6 +161,7 @@ def create_dota_scenario_handlers(
         ),
         GeneratePhraseForPlayer(
             phrase_generator=dota.phrase_generator,
+            match=last_match,
             match_player=match_player,
             result=phrase,
             dota=dota,
@@ -325,6 +326,7 @@ def create_dota_scenario_handlers(
         ),
         GeneratePhraseForPlayer(
             phrase_generator=dota.phrase_generator,
+            match=last_match,
             match_player=match_player,
             result=phrase,
             dota=dota,

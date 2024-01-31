@@ -17,7 +17,7 @@ def main():
     hero = '{hero}'
 
     with open('opendota_matches_shide.json', encoding='utf-8') as f:
-        MATCHES = json.load(f)
+        opendota_matches = json.load(f)
 
     grammar = {
         **yaml_dict_from_file('../resources/dota/phrase_rules.yaml'),
@@ -35,11 +35,11 @@ def main():
 
     variables = get_dota_variables()
 
-    for match in MATCHES:
+    for match in opendota_matches:
         print('\n\n\n')
         pprint.pprint(match)
         print('\n')
-        p = pgen.generate_phrase(match, player_name, hero)
+        p = pgen.generate_phrase(match_id=1, player=match, player_name=player_name, hero_name=hero)
 
         for v in variables:
             if v.name in match:

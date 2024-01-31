@@ -254,7 +254,8 @@ def edit_last_answer(msg: str):
     async def _fn(context: Context):
         if msg:
             rendered = context.render_template(msg)
-            await context.bot.last_answer.edit(content=rendered)
+            if context.bot.last_answer:
+                await context.bot.last_answer.edit(content=rendered)
         return True
 
     return _fn
@@ -292,6 +293,7 @@ T = TypeVar("T")
 def _eval(x: Optional[IExpression[T]], context: Context) -> Optional[T]:
     if x:
         return x.evaluate(context)
+    return None
 
 
 @dataclass

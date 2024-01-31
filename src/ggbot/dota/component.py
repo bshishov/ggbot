@@ -165,21 +165,24 @@ class CountMatchupsAction:
 @dataclass
 class GeneratePhraseForPlayer:
     phrase_generator: PhraseGenerator
+    match: IExpression[DotaMatch]
     match_player: IExpression[Player]
     result: IVariable
     dota: Dota
 
     def __attrs_post_init__(self):
+        assert DOTA_MATCH.can_accept(self.match.get_return_type())
         assert DOTA_MATCH_PLAYER.can_accept(self.match_player.get_return_type())
         assert self.result.get_return_type().can_accept(STRING)
 
     async def __call__(self, context: Context) -> bool:
         player = self.match_player.evaluate(context)
+        match = self.match.evaluate(context)
         hero_name = self.dota.hero_id_to_localized_name(player.hero_id)
-        match_data = ctor.dump(player)  # backwards compatibility
 
         phrase = self.phrase_generator.generate_phrase(
-            match=match_data,
+            match_id=match.match_id,
+            player=player,
             player_name=context.author.member.display_name,
             hero_name=hero_name,
         )

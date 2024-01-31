@@ -175,7 +175,7 @@ class RunePickupEvent:
 @dataclass(slots=True, frozen=True, repr=False)
 class Player:
     hero_id: int
-    player_slot: Optional[int] = None
+    player_slot: int
     assists: Optional[int] = None
     deaths: Optional[int] = None
     denies: Optional[int] = None
