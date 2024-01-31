@@ -54,11 +54,11 @@ async def get_url_json_with_file_cache(
         if resp.status != 200:
             raise ValueError(f"Failed to get data from url: {url}")
         data = await resp.read()
+        _logger.debug(data.decode(encoding="utf-8", errors="ignore"))
         _logger.debug(f"Saving response data to cache ({cached_file_path})")
         os.makedirs(cache_dir, exist_ok=True)
         with open(cached_file_path, "wb") as fp:
             fp.write(data)
-        print(data)
         return json.loads(data)
 
 
