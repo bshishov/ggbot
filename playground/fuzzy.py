@@ -1,4 +1,4 @@
-import numpy as np
+
 
 from ggbot.fuzzy import *
 
@@ -28,7 +28,9 @@ def main():
     evaluated = rules.evaluate(food=2, service=2)
     print(f'tip={evaluated} {tip.fuzzify_all(evaluated)}')
 
+    import numpy as np
     import matplotlib.pyplot as plt
+
     m = np.zeros((20, 20), np.float32)
     for i in range(m.shape[0]):
         food_val = 3 * i / (m.shape[0] - 1.0)

@@ -1,0 +1,22 @@
+logging:
+  level: DEBUG
+
+memory:
+  db_file: storage.db
+
+dota:
+  phrase_parsing_grammar_files:
+    - resources/dota/phrase_rules.yaml
+    - resources/dota/heroes.yaml
+
+resources:
+  grammar_files:
+    - resources/common/common.yaml
+    - resources/common/datetime.yaml
+    - resources/common/numbers.yaml
+    - resources/common/money.yaml
+    - resources/common/intents.yaml
+    - resources/dota/grammar.yaml
+    - resources/dota/heroes.yaml
+    - resources/search/grammar.yaml
+    - resources/search/genres.yaml

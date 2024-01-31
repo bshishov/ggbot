@@ -1,9 +1,10 @@
 import sys
 import logging
 import asyncio
-from typing import List, Any, Dict
+from pathlib import Path
+from typing import Any
 
-import toml
+import yaml
 from jinja2.nativetypes import NativeEnvironment
 
 from ggbot.client import Client
@@ -16,11 +17,11 @@ from ggbot.utils import require_item_from_dict_or_env
 _logger = logging.getLogger("MAIN")
 
 
-async def main(config_filename: str = "app.toml"):
+async def main(config_path: Path = Path("app.yaml")):
     # Loading config
-    _logger.info(f"Loading config from {config_filename}")
-    with open(config_filename, "r", encoding="utf-8") as f:
-        config = toml.load(f)
+    _logger.info(f"Loading config from {config_path}")
+    with config_path.open("r", encoding="utf-8") as f:
+        config = yaml.full_load(f)
 
     # Setting log level
     log_level_name = require_item_from_dict_or_env(config, "logging.level")
@@ -68,7 +69,7 @@ async def main(config_filename: str = "app.toml"):
     )
     phrases_table = gsc.get_table_by_title("ggbot_dota", worksheet="phrases")
 
-    phrase_parsing_grammar: Dict[str, List[Any]] = {}
+    phrase_parsing_grammar: dict[str, list[Any]] = {}
     for filename in config["dota"]["phrase_parsing_grammar_files"]:
         data = yaml_dict_from_file(filename)
         phrase_parsing_grammar.update(data)

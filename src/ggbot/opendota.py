@@ -360,23 +360,23 @@ class PlayerRecentMatch:
     lobby_type: int
     hero_id: int
     start_time: int
-    version: Optional[int]
     kills: int
     deaths: int
     assists: int
-    skill: Optional[int]
     xp_per_min: int
     gold_per_min: int
     hero_damage: int
     tower_damage: int
     hero_healing: int
     last_hits: int
-    lane: Optional[int]
-    lane_role: Optional[int]
-    is_roaming: Optional[bool]
     cluster: int
     leaver_status: int
-    party_size: Optional[int]
+    version: Optional[int] = None
+    lane: Optional[int] = None
+    lane_role: Optional[int] = None
+    is_roaming: Optional[bool] = None
+    party_size: Optional[int] = None
+    skill: Optional[int] = None
 
 
 @dataclass(slots=True, frozen=True)
