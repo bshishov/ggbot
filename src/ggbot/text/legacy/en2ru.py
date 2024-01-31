@@ -1,4 +1,4 @@
-from typing import Optional, Iterable, Union
+from typing import Optional, Iterable
 import itertools
 from collections import namedtuple
 

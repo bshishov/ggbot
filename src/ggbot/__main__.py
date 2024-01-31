@@ -17,7 +17,12 @@ from ggbot.utils import require_item_from_dict_or_env
 _logger = logging.getLogger("MAIN")
 
 
-async def main(config_path: Path = Path("app.yaml")):
+async def main(*args: str) -> None:
+    if len(args) == 0:
+        config_path = Path("app.yaml")
+    else:
+        config_path = Path(args[0])
+
     # Loading config
     _logger.info(f"Loading config from {config_path}")
     with config_path.open("r", encoding="utf-8") as f:
