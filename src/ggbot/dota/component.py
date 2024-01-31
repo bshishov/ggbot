@@ -3,7 +3,6 @@ import re
 import logging
 import time
 import aiohttp
-import ctor
 
 from attr import dataclass
 

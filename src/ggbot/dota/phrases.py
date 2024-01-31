@@ -127,6 +127,10 @@ def parse_rules(raw_phrases: IndexedCollection, nlu: NluBase) -> List[PhraseRule
     return build_rules(raw_phrases, nlu, variables)
 
 
+_CTX = ctor.JsonSerializationContext()
+_PLAYER_CONVERTER = _CTX.get_converter(Player)
+
+
 @dataclass
 class PhraseGenerator:
     phrase_rules: List[PhraseRule]
@@ -137,7 +141,7 @@ class PhraseGenerator:
     ) -> Optional[str]:
         is_radiant = player.player_slot < 128
         radiant_win = player.radiant_win is True
-        match = ctor.dump(player)
+        match = _PLAYER_CONVERTER.dump(player, _CTX)
 
         match["player"] = player_name.lower()
 
