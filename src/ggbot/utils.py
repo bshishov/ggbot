@@ -58,6 +58,7 @@ async def get_url_json_with_file_cache(
         os.makedirs(cache_dir, exist_ok=True)
         with open(cached_file_path, "wb") as fp:
             fp.write(data)
+        print(data)
         return json.loads(data)
 
 
