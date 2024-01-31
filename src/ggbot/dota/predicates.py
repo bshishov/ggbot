@@ -77,16 +77,14 @@ __all__ = [
 
 class IPlayerPredicate(metaclass=ABCMeta):
     @abstractmethod
-    def check(self, match: DotaMatch, player: Player) -> bool:
-        ...
+    def check(self, match: DotaMatch, player: Player) -> bool: ...
 
 
 class IPlayersQuery(metaclass=ABCMeta):
     @abstractmethod
     def iter_players(
         self, match: DotaMatch, subject_player: Player
-    ) -> Iterable[Player]:
-        ...
+    ) -> Iterable[Player]: ...
 
 
 class Just(IPlayerPredicate):
@@ -167,8 +165,7 @@ def find_player_by_steam_id(match: DotaMatch, steam_id: int) -> Optional[Player]
 
 
 class IPlayerNumericParamQuery(metaclass=ABCMeta):
-    def get_value(self, player: Player) -> float:
-        ...
+    def get_value(self, player: Player) -> float: ...
 
 
 @dataclass

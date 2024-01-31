@@ -91,7 +91,7 @@ async def main(config_path: Path = Path("app.yaml")):
 
     components = [
         dota,
-        memory
+        memory,
         # igdb,
     ]
 

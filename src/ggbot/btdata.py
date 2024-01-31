@@ -189,7 +189,10 @@ class NumberSlotExpression(IExpression[int]):
 
 class Fallback(IExpression):
     def __init__(
-        self, tp: IType, value: IExpression[Optional[TVar]], fallback_value: IExpression[TVar]
+        self,
+        tp: IType,
+        value: IExpression[Optional[TVar]],
+        fallback_value: IExpression[TVar],
     ):
         assert ONEOF(tp, NULL_TYPE).can_accept(value.get_return_type())
         assert tp.can_accept(fallback_value.get_return_type())

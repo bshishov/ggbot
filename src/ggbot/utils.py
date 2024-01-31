@@ -115,7 +115,9 @@ def get_item_from_dict(data: Mapping[str, Any], path: str):
     return obj
 
 
-def require_item_from_dict_or_env(data: Mapping[str, Any], path: str, env_var: Optional[str] = None):
+def require_item_from_dict_or_env(
+    data: Mapping[str, Any], path: str, env_var: Optional[str] = None
+):
     if not env_var:
         env_var = path.replace(".", "_").upper()
 

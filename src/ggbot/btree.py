@@ -221,7 +221,9 @@ TValue = TypeVar("TValue")
 
 
 def set_value_in_map(
-    var: IVariable[Dict[TKey, TValue]], key: IExpression[TKey], value: IExpression[TValue]
+    var: IVariable[Dict[TKey, TValue]],
+    key: IExpression[TKey],
+    value: IExpression[TValue],
 ) -> Action:
     assert var.get_return_type().can_accept(
         MAP(key.get_return_type(), value.get_return_type())
