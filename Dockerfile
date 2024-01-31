@@ -1,4 +1,4 @@
-FROM python:3.9.4-buster
+FROM python:3.11
 
 MAINTAINER Boris Shishov <borisshishov@gmail.com>
 
