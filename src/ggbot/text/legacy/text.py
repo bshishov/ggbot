@@ -233,7 +233,7 @@ def match_pattern(
     l2r_sim_coeff: float = 0.8,
     token_disposition_coeff: float = 0.2,
 ) -> MatchResult:
-    score = 0
+    score = 0.0
     expected_loc = -1
     p_token_locations = []
     for p in tp:

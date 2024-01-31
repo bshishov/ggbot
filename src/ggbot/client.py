@@ -32,7 +32,10 @@ class Client(discord.Client):
 
         if (
             isinstance(message.channel, discord.DMChannel)
-            or message.channel.name == "gg-bot-test"
+            or (
+                isinstance(message.channel, discord.TextChannel)
+                and message.channel.name == "gg-bot-test"
+            )
             or self.is_mentioned(message)
         ):
             _logger.debug("Handling mentioned message")

@@ -49,7 +49,7 @@ class SlotToken(Token):
 
 
 class BaseTokenizer:
-    def tokenize(self, text: str) -> tuple[Token]:
+    def tokenize(self, text: str) -> tuple[Token, ...]:
         raise NotImplementedError
 
 
@@ -113,5 +113,5 @@ class Tokenizer(BaseTokenizer):
                     end=ended,
                 )
 
-    def tokenize(self, text: str) -> tuple[Token]:
+    def tokenize(self, text: str) -> tuple[Token, ...]:
         return tuple(self._match(text))

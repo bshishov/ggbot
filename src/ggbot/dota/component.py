@@ -212,11 +212,11 @@ def parse_steam_id_from_message(target_variable: IVariable[int]):
             return False
 
         try:
-            steam_id = int(steam_id)
+            steam_id_value = int(steam_id)
         except ValueError:
             return False
 
-        context.set_variable(target_variable, steam_id)
+        context.set_variable(target_variable, steam_id_value)
         return True
 
     return _fn

@@ -130,7 +130,7 @@ class MessageFromChannelExpectation(TimedEventMessageExpectation):
         _logger.debug(
             f"Checking {self.__class__.__name__} "
             f"expected_channel={self.expected_channel_id} "
-            f"message.channel.id={message.channel.id} ({message.channel.name})"
+            f"message.channel.id={message.channel}"
             f"ctx={context.name}"
         )
         return message.channel.id == self.expected_channel_id
@@ -139,7 +139,7 @@ class MessageFromChannelExpectation(TimedEventMessageExpectation):
         _logger.debug(
             f"Satisfying {self.__class__.__name__} expectation "
             f"expected_channel={self.expected_channel_id} "
-            f"message.channel.id={message.channel.id} ({message.channel.name})"
+            f"message.channel.id={message.channel}"
             f"ctx={context.name}"
         )
         context.message = message

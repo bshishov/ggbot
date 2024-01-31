@@ -42,7 +42,7 @@ class PhraseRule:
 def build_rules(
     phrases: IndexedCollection[list], nlu: NluBase, variables: List[Variable]
 ) -> List[PhraseRule]:
-    variables = {v.name: v for v in variables}
+    variables_dict = {v.name: v for v in variables}
 
     phrase_rules = []
     for condition, weight, phrase in phrases:
@@ -75,7 +75,7 @@ def build_rules(
                 operands.append(ValueIsOneOf(var_name, set(value_name)))
             else:
                 # Linguistic
-                v = variables[var_name]
+                v = variables_dict[var_name]
                 operands.append(Is(v, value_name))
 
         rule_condition = And(*operands)

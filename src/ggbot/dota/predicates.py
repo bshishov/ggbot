@@ -165,6 +165,7 @@ def find_player_by_steam_id(match: DotaMatch, steam_id: int) -> Optional[Player]
 
 
 class IPlayerNumericParamQuery(metaclass=ABCMeta):
+    @abstractmethod
     def get_value(self, player: Player) -> float: ...
 
 
@@ -290,6 +291,9 @@ class UsedItemTimesMoreThan(IPlayerPredicate):
     times: int
 
     def check(self, match: DotaMatch, player: Player) -> bool:
+        if player.item_uses is None:
+            return False
+
         return player.item_uses.get(self.item, 0) > self.times
 
 
@@ -299,6 +303,8 @@ class PurchasedItemEarlierThan(IPlayerPredicate):
     time: int
 
     def check(self, match: DotaMatch, player: Player) -> bool:
+        if player.first_purchase_time is None:
+            return False
         purchase_time = player.first_purchase_time.get(self.item)
         if purchase_time is None:
             return False
@@ -311,6 +317,9 @@ class PurchasedItemAfter(IPlayerPredicate):
     time: int
 
     def check(self, match: DotaMatch, player: Player) -> bool:
+        if not player.first_purchase_time:
+            return False
+
         purchase_time = player.first_purchase_time.get(self.item)
         if purchase_time is None:
             return False
@@ -334,6 +343,9 @@ class MatchLongerThan(IPlayerPredicate):
     seconds: int
 
     def check(self, match: DotaMatch, player: Player) -> bool:
+        if match.duration is None:
+            return False
+
         return match.duration > self.seconds
 
 
@@ -342,12 +354,18 @@ class MatchShorterThan(IPlayerPredicate):
     seconds: int
 
     def check(self, match: DotaMatch, player: Player) -> bool:
+        if match.duration is None:
+            return False
+
         return match.duration < self.seconds
 
 
 @dataclass
 class PredictedVictory(IPlayerPredicate):
     def check(self, match: DotaMatch, player: Player) -> bool:
+        if player.pred_vict is None:
+            return False
+
         return player.pred_vict
 
 
@@ -404,6 +422,12 @@ class PermanentBuffStacksMoreThan(IPlayerPredicate):
             return False
 
         for buff in player.permanent_buffs:
+            if buff.permanent_buff is None:
+                continue
+
+            if buff.stack_count is None:
+                continue
+
             if buff.permanent_buff == self.buff_id and buff.stack_count > self.stacks:
                 return True
 
@@ -452,6 +476,9 @@ class IsToxicChat(IPlayerPredicate):
             return False
         toxic_messages = 0
         for chat_event in match.chat:
+            if chat_event.key is None:
+                continue
+
             if (
                 chat_event.player_slot == player.player_slot
                 and chat_event.type == "chat"
@@ -466,6 +493,8 @@ class BuybackedMoreThan(IPlayerPredicate):
     times: int
 
     def check(self, match: DotaMatch, player: Player) -> bool:
+        if player.buyback_count is None:
+            return False
         return player.buyback_count > self.times
 
 
@@ -497,6 +526,9 @@ class DiedOfFirstBloodBefore(IPlayerPredicate):
             return False
 
         for objective in match.objectives:
+            if objective.type is None:
+                continue
+
             if (
                 objective.type == FirstBloodObjective.type
                 and objective.time < self.before

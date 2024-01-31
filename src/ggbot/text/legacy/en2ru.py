@@ -1,6 +1,7 @@
 from typing import Optional, Iterable
 import itertools
 from collections import namedtuple
+from collections.abc import MutableSequence
 
 
 CONSONANTS = set("bcdfghjklmnpqrstvwxz")  # as # symbol
@@ -312,7 +313,7 @@ def tokenize(text: str) -> Iterable[str]:
 
 
 def replace_with_rules_2(text: str) -> str:
-    matches: list[Optional[str]] = [None] * len(text) * 2
+    matches: MutableSequence[Optional[str]] = [None] * len(text) * 2
     for i in range(len(text)):
         for rule, replacement in REPLACEMENTS.items():
             match = match_rule(text, rule, start=i)

@@ -1,4 +1,4 @@
-from typing import Dict, Any, Mapping, Iterable, TypeVar, Generic
+from typing import Dict, Any, Mapping, Iterable, TypeVar, Generic, Optional
 import os
 import pathlib
 import aiohttp
@@ -112,7 +112,7 @@ class Cached(Source):
     cache_dir: str = ".cache"
     lifetime_seconds: float = 24 * 60 * 60
 
-    _cache_path: pathlib.Path = None
+    _cache_path: Optional[pathlib.Path] = None
 
     def __post_init__(self):
         filename = hashlib.md5(self.source.get_uri().encode()).hexdigest()[:8]

@@ -73,8 +73,7 @@ class Index:
         lowered = text.lower()
         yield lowered
 
-        tokens = tokenize(lowered)
-        tokens = (t for t in tokens if t not in self.stopwords)
+        tokens = [t for t in tokenize(lowered) if t not in self.stopwords]
         tokens = self.stemmer.stemWords(tokens)
 
         if include_single_tokens:

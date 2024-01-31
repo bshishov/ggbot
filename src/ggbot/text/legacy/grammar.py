@@ -280,7 +280,7 @@ class GrammarBasedNluMatchResult(IntentMatchResultBase):
 
 
 class GrammarBasedNlu(NluBase):
-    def __init__(self, grammar: TGrammar, matcher: Matcher = None):
+    def __init__(self, grammar: TGrammar, matcher: Optional[Matcher] = None):
         self._matcher = matcher or Matcher(
             grammar,
             slot_matchers={

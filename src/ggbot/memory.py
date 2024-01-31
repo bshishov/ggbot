@@ -34,7 +34,7 @@ class DictStorage(BaseStorage):
 
 
 class PickleDbStorage(BaseStorage):
-    def __init__(self, filename: set = "storage.db"):
+    def __init__(self, filename: str = "storage.db"):
         self.db = pickledb.load(filename, auto_dump=True)
 
     def get(self, key: str) -> Optional[Any]:

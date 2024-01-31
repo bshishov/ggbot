@@ -51,8 +51,8 @@ class IVariable(IExpression[T], metaclass=ABCMeta):
 @dataclass
 class BotContext:
     template_env: jinja2.environment.Environment
-    last_answer: discord.Message = None
-    client: discord.Client = None
+    last_answer: Optional[discord.Message] = None
+    client: Optional[discord.Client] = None
 
     def make_template_from_string(self, source: str) -> jinja2.Template:
         return self.template_env.from_string(source)
@@ -64,9 +64,12 @@ class BotContext:
 
         emoji = emoji.strip(" \n\r\t:")
 
-        found: discord.Emoji = discord.utils.get(self.client.emojis, name=emoji)
-        if found:
-            return str(found)
+        if self.client is not None:
+            found: Optional[discord.Emoji] = discord.utils.get(
+                self.client.emojis, name=emoji
+            )
+            if found:
+                return str(found)
 
         return f":{emoji}:"
 
@@ -79,7 +82,7 @@ class BotContext:
 
 @dataclass
 class UserContext:
-    member: discord.Member
+    member: discord.Member | discord.User
 
     @property
     def display_name(self) -> str:
@@ -157,11 +160,11 @@ class Context:
         self._expectations = active
         return active
 
-    def set_variable(self, variable: IVariable, value):
+    def set_variable(self, variable: IVariable[T], value: T) -> None:
         self.local[variable.get_name()] = value
 
     def get_var_value(self, variable: IVariable[T]) -> T:
-        return self.local.get(variable.get_name())
+        return self.local.get(variable.get_name())  # type: ignore
 
 
 @dataclass(frozen=True)

@@ -1,7 +1,8 @@
-from typing import Union, Literal, Dict, List, Optional
+import typing
+from typing import Union, Literal, Optional
 import aiohttp
 
-from attr import dataclass
+from attr import dataclass, attrib
 import ctor
 
 from ggbot.utils import get_url_json_with_file_cache
@@ -9,6 +10,8 @@ from ggbot.utils import get_url_json_with_file_cache
 
 __all__ = [
     "DotaMatch",
+    "FirstBloodObjective",
+    "PlayerRecentMatch",
     "Player",
     "PlayerRanking",
     "HeroMatchup",
@@ -26,11 +29,11 @@ StrOrInt = Union[str, int]
 
 @dataclass(slots=True, frozen=True)
 class ChatEvent:
-    time: int
-    type: str
-    key: str
-    slot: int
-    player_slot: int
+    time: Optional[int] = None
+    type: Optional[str] = None
+    key: Optional[str] = None
+    slot: Optional[int] = None
+    player_slot: Optional[int] = None
 
 
 @dataclass(slots=True, frozen=True)
@@ -44,14 +47,14 @@ class DraftTiming:
     total_time_taken: int
 
 
-@dataclass(slots=True, frozen=True)
-class BaseObjective:
+class BaseObjective(typing.Protocol):
     time: int
     type: str
 
 
 @dataclass(slots=True, frozen=True)
 class FirstBloodObjective(BaseObjective):
+    time: int
     type: Literal["CHAT_MESSAGE_FIRSTBLOOD"]
     slot: int
     key: int
@@ -60,12 +63,14 @@ class FirstBloodObjective(BaseObjective):
 
 @dataclass(slots=True, frozen=True)
 class CourierLostObjective(BaseObjective):
+    time: int
     type: Literal["CHAT_MESSAGE_COURIER_LOST"]
     team: int
 
 
 @dataclass(slots=True, frozen=True)
 class BuildingKillObjective(BaseObjective):
+    time: int
     type: Literal["building_kill"]
     unit: str
     key: str
@@ -75,12 +80,14 @@ class BuildingKillObjective(BaseObjective):
 
 @dataclass(slots=True, frozen=True)
 class RoshanKillObjective(BaseObjective):
+    time: int
     type: Literal["CHAT_MESSAGE_ROSHAN_KILL"]
     team: int
 
 
 @dataclass(slots=True, frozen=True)
 class AegisObjective(BaseObjective):
+    time: int
     type: Literal["CHAT_MESSAGE_AEGIS"]
     slot: int
     player_slot: int
@@ -88,6 +95,7 @@ class AegisObjective(BaseObjective):
 
 @dataclass(slots=True, frozen=True)
 class AegisStolenObjective(BaseObjective):
+    time: int
     type: Literal["CHAT_MESSAGE_AEGIS_STOLEN"]
     slot: int
     player_slot: int
@@ -113,11 +121,11 @@ class PickBan:
 
 @dataclass(slots=True, frozen=True, repr=False)
 class TeamFightPlayer:
-    deaths_pos: Dict[str, Dict[str, int]]
-    ability_uses: Dict[str, int]
-    ability_targets: Dict[str, Dict[str, int]]
-    item_uses: Dict[str, int]
-    killed: Dict[str, int]
+    deaths_pos: dict[str, dict[str, int]]
+    ability_uses: dict[str, int]
+    ability_targets: dict[str, dict[str, int]]
+    item_uses: dict[str, int]
+    killed: dict[str, int]
     deaths: int
     buybacks: int
     damage: int
@@ -130,19 +138,19 @@ class TeamFightPlayer:
 
 @dataclass(slots=True, frozen=True, repr=False)
 class TeamFight:
-    start: int
-    end: int
-    last_death: int
-    deaths: int
-    players: List[TeamFightPlayer]
+    start: Optional[int] = None
+    end: Optional[int] = None
+    last_death: Optional[int] = None
+    deaths: Optional[int] = None
+    players: Optional[list[TeamFightPlayer]] = None
 
 
 @dataclass(slots=True, frozen=True)
 class PlayerBuybackEvent:
-    time: int
-    slot: int
-    type: Literal["buyback_log"]
-    player_slot: int
+    time: Optional[int] = None
+    slot: Optional[int] = None
+    type: Optional[Literal["buyback_log"]] = None
+    player_slot: Optional[int] = None
 
 
 @dataclass(slots=True, frozen=True)
@@ -153,143 +161,76 @@ class BenchmarkValue:
 
 @dataclass(slots=True, frozen=True)
 class PermanentBuffState:
-    permanent_buff: int
-    stack_count: int
+    permanent_buff: Optional[int] = None
+    stack_count: Optional[int] = None
 
 
 @dataclass(slots=True, frozen=True)
 class RunePickupEvent:
-    time: int
-    key: int
+    time: Optional[int] = None
+    key: Optional[int] = None
 
 
+# https://docs.opendota.com/#tag/matches/operation/get_matches_by_match_id
 @dataclass(slots=True, frozen=True, repr=False)
 class Player:
-    match_id: int
-    player_slot: int
-    ability_targets: Optional[Dict[str, Dict[str, int]]]
-    ability_upgrades_arr: List[int]
-    ability_uses: Optional[Dict[str, int]]
-    account_id: Optional[int]
-    actions: Optional[Dict[str, int]]
-    # additional_units: ???
-    assists: int
-    backpack_0: int
-    backpack_1: int
-    backpack_2: int
-    backpack_3: Optional[int]
-    buyback_log: Optional[List[PlayerBuybackEvent]]
-    camps_stacked: Optional[int]
-    # connection_log: int
-    creeps_stacked: Optional[int]
-    # damage
-    # damage_inflictor
-    # damage_inflictor_received
-    # damage_taken
-    # damage_targets
-    deaths: int
-    denies: int
-    dn_t: Optional[List[int]]
-    firstblood_claimed: Optional[int]
-    gold: int
-    gold_per_min: int
-    gold_reasons: Optional[Dict[str, int]]
-    gold_spent: int
-    gold_t: Optional[List[int]]
-    hero_damage: int
-    hero_healing: int
-    hero_hits: Optional[Dict[str, int]]
     hero_id: int
-    item_0: int
-    item_1: int
-    item_2: int
-    item_3: int
-    item_4: int
-    item_5: int
-    item_neutral: int
-    item_uses: Optional[Dict[str, int]]
-    # kill_streaks
-    killed: Optional[Dict[str, int]]
-    killed_by: Optional[Dict[str, int]]
-    kills: int
-    # kills_log
-    # lane_pos
-    last_hits: int
-    leaver_status: int
-    level: int
-    lh_t: Optional[List[int]]
-    # life_state
-    # max_hero_hit
-    # multi_kills
-    net_worth: Optional[int]
-    # obs
-    # obs_left_log
-    # obs_log
-    obs_placed: Optional[int]
-    party_id: Optional[int]
-    party_size: Optional[int]
-    performance_others: Optional[Dict[str, int]]
-    permanent_buffs: Optional[List[PermanentBuffState]]
-    pred_vict: Optional[bool]
-    purchase: Optional[Dict[str, int]]
-    # purchase_log
-    randomed: Optional[bool]
-    # repicked: ???
-    roshans_killed: Optional[int]
-    rune_pickups: Optional[int]
-    runes: Optional[Dict[str, int]]
-    runes_log: Optional[List[RunePickupEvent]]
-    # sen
-    # sen_left_log
-    # sen_log
-    # sen_log
-    sen_placed: Optional[int]
-    stuns: Optional[float]
-    teamfight_participation: Optional[float]
-    times: Optional[List[int]]
-    tower_damage: int
-    towers_killed: Optional[int]
-    xp_per_min: int
-    xp_reasons: Optional[Dict[str, int]]
-    xp_t: Optional[List[int]]
-    radiant_win: bool
-    start_time: int
-    duration: int
-    cluster: int
-    lobby_type: int
-    game_mode: int
-    is_contributor: bool
-    patch: int
-    isRadiant: bool
-    win: int
-    lose: int
-    total_gold: int
-    total_xp: int
-    abandons: int
-    # rank_tier: Optional[int] ???
-    # cosmetics
-    benchmarks: Dict[str, BenchmarkValue]
-    tower_kills: Optional[int] = None
-    courier_kills: Optional[int] = None
-    lane_kills: Optional[int] = None
-    hero_kills: Optional[int] = None
-    observer_kills: Optional[int] = None
-    sentry_kills: Optional[int] = None
-    roshan_kills: Optional[int] = None
-    necronomicon_kills: Optional[int] = None
-    ancient_kills: Optional[int] = None
-    buyback_count: Optional[int] = None
+    player_slot: Optional[int] = None
+    assists: Optional[int] = None
+    deaths: Optional[int] = None
+    denies: Optional[int] = None
+    gold: Optional[int] = None
+    gold_per_min: Optional[int] = None
+    gold_spent: Optional[int] = None
+    hero_damage: Optional[int] = None
+    hero_healing: Optional[int] = None
+    item_0: Optional[int] = None
+    item_1: Optional[int] = None
+    item_2: Optional[int] = None
+    item_3: Optional[int] = None
+    item_4: Optional[int] = None
+    item_5: Optional[int] = None
+    item_neutral: Optional[int] = None
+    kills: Optional[int] = None
+    last_hits: Optional[int] = None
+    leaver_status: Optional[int] = None
+    level: Optional[int] = None
+    tower_damage: Optional[int] = None
+    xp_per_min: Optional[int] = None
+    radiant_win: Optional[bool] = None
+    start_time: Optional[int] = None
+    duration: Optional[int] = None
+    cluster: Optional[int] = None
+    lobby_type: Optional[int] = None
+    game_mode: Optional[int] = None
+    patch: Optional[int] = None
+    isRadiant: Optional[bool] = None
+    win: Optional[int] = None
+    lose: Optional[int] = None
+    total_gold: Optional[int] = None
+    total_xp: Optional[int] = None
+    abandons: Optional[int] = None
+    rank_tier: Optional[int] = None
+    account_id: Optional[int] = None
+    camps_stacked: Optional[int] = None
+    creeps_stacked: Optional[int] = None
+    damage: Optional[dict[str, int]] = None
+    damage_taken: Optional[dict[str, int]] = None
+    dn_t: Optional[list[int]] = None
+    firstblood_claimed: Optional[int] = None
+    net_worth: Optional[int] = None
+    obs_placed: Optional[int] = None
+    pred_vict: Optional[bool] = None
+    randomed: Optional[bool] = None
+    roshans_killed: Optional[int] = None
+    rune_pickups: Optional[int] = None
+    sen_placed: Optional[int] = None
+    stuns: Optional[float] = None
+    towers_killed: Optional[int] = None
     observer_uses: Optional[int] = None
     sentry_uses: Optional[int] = None
-    lane_efficiency: Optional[float] = None
-    lane_efficiency_pct: Optional[int] = None
-    lane: Optional[int] = None
-    lane_role: Optional[int] = None
-    is_roaming: Optional[bool] = None
-    purchase_time: Optional[Dict[str, int]] = None
-    first_purchase_time: Optional[Dict[str, int]] = None
-    item_win: Optional[Dict[str, int]] = None
-    item_usage: Optional[Dict[str, int]] = None
+    item_win: Optional[dict[str, int]] = None
+    item_usage: Optional[dict[str, int]] = None
     actions_per_min: Optional[int] = None
     life_state_dead: Optional[int] = None
     neutral_kills: Optional[int] = None
@@ -300,47 +241,45 @@ class Player:
     purchase_ward_sentry: Optional[int] = None
     purchase_tpscroll: Optional[int] = None
     pings: Optional[int] = None
+    teamfight_participation: Optional[float] = None
+    party_id: Optional[int] = None
+    item_uses: Optional[dict[str, int]] = None
+    first_purchase_time: Optional[dict[str, int]] = None
+    lh_t: Optional[list[int]] = None
+    permanent_buffs: Optional[list[PermanentBuffState]] = None
+    runes: Optional[dict[str, int]] = None
+    buyback_count: Optional[int] = None
 
 
 @dataclass(slots=True, frozen=True, repr=False)
 class DotaMatch:
     match_id: int
-    barracks_status_dire: int
-    barracks_status_radiant: int
-    chat: Optional[List[ChatEvent]]
-    cluster: int
-    cosmetics: Optional[Dict[str, int]]
-    dire_score: int
-    dire_team_id: Optional[int]
-    draft_timings: Optional[List[DraftTiming]]
-    duration: int
-    engine: int
-    first_blood_time: int
-    game_mode: int
-    human_players: int
-    leagueid: int
-    lobby_type: int
-    match_seq_num: int
-    negative_votes: int
-    objectives: Optional[List[OneOfObjectives]]
-    picks_bans: Optional[List[PickBan]]
-    positive_votes: int
-    radiant_gold_adv: Optional[List[int]]
-    radiant_score: int
-    radiant_team_id: Optional[int]
-    radiant_win: bool
-    radiant_xp_adv: Optional[List[int]]
-    skill: Optional[int]
     start_time: int
-    teamfights: Optional[List[TeamFight]]
-    tower_status_dire: int
-    tower_status_radiant: int
-    version: Optional[int]
-    players: List[Player]
-    patch: int
-
-    all_word_counts: Optional[Dict[str, int]] = None
-    my_word_counts: Optional[Dict[str, int]] = None
+    game_mode: int
+    duration: int
+    barracks_status_dire: Optional[int] = None
+    barracks_status_radiant: Optional[int] = None
+    cluster: Optional[int] = None
+    dire_score: Optional[int] = None
+    engine: Optional[int] = None
+    first_blood_time: Optional[int] = None
+    human_players: Optional[int] = None
+    leagueid: Optional[int] = None
+    lobby_type: Optional[int] = None
+    match_seq_num: Optional[int] = None
+    radiant_score: Optional[int] = None
+    radiant_win: Optional[bool] = None
+    tower_status_dire: Optional[int] = None
+    tower_status_radiant: Optional[int] = None
+    players: list[Player] = attrib(factory=list)
+    patch: Optional[int] = None
+    skill: Optional[int] = None
+    version: Optional[int] = None
+    dire_team_id: Optional[int] = None
+    radiant_gold_adv: Optional[list[int]] = None
+    radiant_team_id: Optional[int] = None
+    radiant_xp_adv: Optional[list[int]] = None
+    chat: Optional[list[ChatEvent]] = None
     replay_url: Optional[str] = None
     region: Optional[int] = None
     throw: Optional[int] = None
@@ -348,6 +287,7 @@ class DotaMatch:
     replay_salt: Optional[int] = None
     series_id: Optional[int] = None
     series_type: Optional[int] = None
+    objectives: Optional[list[OneOfObjectives]] = None
 
 
 @dataclass(slots=True, frozen=True)
@@ -392,7 +332,7 @@ class JobStatus:
 class DotaItemAttrib:
     key: str
     header: str
-    value: Union[str, List[str]]
+    value: Union[str, list[str]]
     footer: str = ""
 
 
@@ -403,16 +343,16 @@ class DotaItem:
 
     cost: Optional[int]
     notes: str
-    attrib: List[DotaItemAttrib]
+    attrib: list[DotaItemAttrib]
     mc: Union[bool, int]
     cd: int
     lore: str
-    components: Optional[List[str]]
+    components: Optional[list[str]]
     created: bool
 
     dname: str = ""
     qual: str = ""
-    hint: Optional[List[str]] = None
+    hint: Optional[list[str]] = None
     charges: Union[bool, int] = False
 
 
@@ -431,18 +371,18 @@ class HeroMatchup:
     wins: int
 
 
-async def get_items() -> Dict[str, DotaItem]:
+async def get_items() -> dict[str, DotaItem]:
     data = await get_url_json_with_file_cache(
         "https://raw.githubusercontent.com/odota/dotaconstants/master/build/items.json"
     )
-    return ctor.load(Dict[str, DotaItem], data)
+    return ctor.load(dict[str, DotaItem], data)
 
 
-async def get_item_ids() -> Dict[str, str]:
+async def get_item_ids() -> dict[str, str]:
     data = await get_url_json_with_file_cache(
         "https://raw.githubusercontent.com/odota/dotaconstants/master/build/item_ids.json"
     )
-    return ctor.load(Dict[str, str], data)
+    return ctor.load(dict[str, str], data)
 
 
 class OpenDotaApi:
@@ -470,7 +410,7 @@ class OpenDotaApi:
 
     async def get_player_recent_matches(
         self, account_id: StrOrInt
-    ) -> List[PlayerRecentMatch]:
+    ) -> list[PlayerRecentMatch]:
         """GET /players/{account_id}/recentMatches
 
         https://docs.opendota.com/#tag/players%2Fpaths%2F~1players~1%7Baccount_id%7D~1recentMatches%2Fget
@@ -479,9 +419,9 @@ class OpenDotaApi:
         data = await get_url_json_with_file_cache(
             url, params=self._params, lifetime=5 * 60
         )
-        return ctor.load(List[PlayerRecentMatch], data)
+        return ctor.load(list[PlayerRecentMatch], data)
 
-    async def get_player_rankings(self, account_id: StrOrInt) -> List[PlayerRanking]:
+    async def get_player_rankings(self, account_id: StrOrInt) -> list[PlayerRanking]:
         """GET /players/{account_id}/recentMatches
 
         https://docs.opendota.com/#tag/players%2Fpaths%2F~1players~1%7Baccount_id%7D~1recentMatches%2Fget
@@ -491,9 +431,9 @@ class OpenDotaApi:
         data = await get_url_json_with_file_cache(
             url, params=self._params, lifetime=5 * 60 * 60
         )
-        return ctor.load(List[PlayerRanking], data)
+        return ctor.load(list[PlayerRanking], data)
 
-    async def get_hero_matchups(self, hero_id: StrOrInt) -> List[HeroMatchup]:
+    async def get_hero_matchups(self, hero_id: StrOrInt) -> list[HeroMatchup]:
         """GET /heroes/{hero_id}/matchups
 
         https://docs.opendota.com/#tag/heroes%2Fpaths%2F~1heroes~1%7Bhero_id%7D~1matchups%2Fget
@@ -503,7 +443,7 @@ class OpenDotaApi:
         data = await get_url_json_with_file_cache(
             url, params=self._params, lifetime=3 * 24 * 60 * 60
         )
-        return ctor.load(List[HeroMatchup], data)
+        return ctor.load(list[HeroMatchup], data)
 
     async def request_match_parse(self, match_id: StrOrInt) -> JobStatus:
         """POST /request/{match_id}
