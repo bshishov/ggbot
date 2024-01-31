@@ -14,7 +14,36 @@ from ggbot.assets import yaml_dict_from_file
 from ggbot.text.tokema_integration import TokemaNlu, rules_from_grammar_dict
 from ggbot.utils import require_item_from_dict_or_env
 
+from ggbot.dota import Dota
+from ggbot.dota.phrases import PhraseGenerator, parse_rules
+from ggbot.spreadsheet import GoogleSpreadsheetsClient
+
 _logger = logging.getLogger("MAIN")
+
+
+def load_phrases_generator(
+    config: dict[str, Any], template_env: NativeEnvironment
+) -> PhraseGenerator:
+    try:
+        service_account_filename: str = require_item_from_dict_or_env(
+            config, "dota.gsc_service_account_file"
+        )
+    except KeyError as e:
+        _logger.warning(str(e))
+        return PhraseGenerator([])
+
+    gsc = GoogleSpreadsheetsClient.from_file(filename=service_account_filename)
+    phrases_table = gsc.get_table_by_title("ggbot_dota", worksheet="phrases")
+
+    phrase_parsing_grammar: dict[str, list[Any]] = {}
+    for filename in config["dota"]["phrase_parsing_grammar_files"]:
+        data = yaml_dict_from_file(filename)
+        phrase_parsing_grammar.update(data)
+
+    rules = rules_from_grammar_dict(phrase_parsing_grammar, template_env)
+    phrases_nlu = TokemaNlu(rules)
+    phrase_rules = parse_rules(phrases_table, phrases_nlu)
+    return PhraseGenerator(phrase_rules)
 
 
 async def main(*args: str) -> None:
@@ -65,27 +94,10 @@ async def main(*args: str) -> None:
     """
 
     """ Dota """
-    from ggbot.dota import Dota
-    from ggbot.dota.phrases import PhraseGenerator, parse_rules
-    from ggbot.spreadsheet import GoogleSpreadsheetsClient
-
-    gsc = GoogleSpreadsheetsClient.from_file(
-        filename=require_item_from_dict_or_env(config, "dota.gsc_service_account_file")
-    )
-    phrases_table = gsc.get_table_by_title("ggbot_dota", worksheet="phrases")
-
-    phrase_parsing_grammar: dict[str, list[Any]] = {}
-    for filename in config["dota"]["phrase_parsing_grammar_files"]:
-        data = yaml_dict_from_file(filename)
-        phrase_parsing_grammar.update(data)
-
-    rules = rules_from_grammar_dict(phrase_parsing_grammar, template_env)
-    phrases_nlu = TokemaNlu(rules)
-    phrase_rules = parse_rules(phrases_table, phrases_nlu)
-
+    phrase_generator = load_phrases_generator(config, template_env)
     dota = Dota(
         opendota_api_key=require_item_from_dict_or_env(config, "opendota.api_key"),
-        phrase_generator=PhraseGenerator(phrase_rules),
+        phrase_generator=phrase_generator,
     )
 
     """ Memory """

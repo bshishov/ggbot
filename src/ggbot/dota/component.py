@@ -9,7 +9,7 @@ from attr import dataclass
 
 from ggbot.context import BotContext, Context, IVariable, IExpression
 from ggbot.component import BotComponent
-from ggbot.assets import *
+from ggbot.assets import cached, JsonAsset, IndexedCollection, UrlSource
 from ggbot.utils import local_time_cache
 from ggbot.opendota import OpenDotaApi, DotaMatch, Player, PlayerRanking, HeroMatchup
 from ggbot.dota.phrases import PhraseGenerator
@@ -98,7 +98,7 @@ class Dota(BotComponent):
     def __init__(self, opendota_api_key: str, phrase_generator: PhraseGenerator):
         self.api_key = opendota_api_key
         self.heroes = HeroesCollection(
-            JsonAsset(Cached(UrlSource(f"{OPENDOTA_API_URL}heroes")))
+            JsonAsset(cached(UrlSource(f"{OPENDOTA_API_URL}heroes")))
         )
         self.phrase_generator = phrase_generator
 

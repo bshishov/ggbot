@@ -1,4 +1,4 @@
-from typing import Dict, Any, Mapping, Iterable, TypeVar, Generic, Optional
+from typing import Dict, Any, Mapping, Iterable, TypeVar, Generic
 import os
 import pathlib
 import aiohttp
@@ -20,6 +20,7 @@ __all__ = [
     "FileSource",
     "UrlSource",
     "Cached",
+    "cached",
     "TextAsset",
     "DictAsset",
     "JsonAsset",
@@ -106,18 +107,20 @@ def generate_id() -> str:
     return str(uuid.uuid4()[:8])
 
 
+def cached(
+    source: Source, cache_dir: str = ".cache", lifetime_seconds: float = 24 * 60 * 60
+):
+    filename = hashlib.md5(source.get_uri().encode()).hexdigest()[:8]
+    cache_path = pathlib.Path(cache_dir, f"{filename}.dat")
+    os.makedirs(cache_dir, exist_ok=True)
+    return Cached(source, cache_path, lifetime_seconds)
+
+
 @dataclass
 class Cached(Source):
     source: Source
-    cache_dir: str = ".cache"
-    lifetime_seconds: float = 24 * 60 * 60
-
-    _cache_path: Optional[pathlib.Path] = None
-
-    def __post_init__(self):
-        filename = hashlib.md5(self.source.get_uri().encode()).hexdigest()[:8]
-        self._cache_path = pathlib.Path(self.cache_dir, f"{filename}.dat")
-        os.makedirs(self.cache_dir, exist_ok=True)
+    _cache_path: pathlib.Path
+    lifetime_seconds: float
 
     def get_uri(self) -> str:
         return str(self._cache_path.absolute())

@@ -182,8 +182,8 @@ class Player:
     gold: Optional[int] = None
     gold_per_min: Optional[int] = None
     gold_spent: Optional[int] = None
-    hero_damage: Optional[int] = None
-    hero_healing: Optional[int] = None
+    hero_damage: int = 0
+    hero_healing: int = 0
     item_0: Optional[int] = None
     item_1: Optional[int] = None
     item_2: Optional[int] = None
@@ -195,7 +195,7 @@ class Player:
     last_hits: Optional[int] = None
     leaver_status: Optional[int] = None
     level: Optional[int] = None
-    tower_damage: Optional[int] = None
+    tower_damage: int = 0
     xp_per_min: Optional[int] = None
     radiant_win: Optional[bool] = None
     start_time: Optional[int] = None
