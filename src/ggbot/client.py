@@ -12,7 +12,7 @@ __all__ = ["Client"]
 
 class Client(discord.Client):
     def __init__(self, conversation_manager: ConversationManager):
-        super(Client, self).__init__()
+        super().__init__(intents=discord.Intents.default())
         self.cm = conversation_manager
 
     def is_mentioned(self, message: discord.Message):
