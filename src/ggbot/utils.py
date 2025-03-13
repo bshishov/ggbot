@@ -29,7 +29,7 @@ async def get_url_json_with_file_cache(
     lifetime: float = 24 * 60 * 60,
     encoding: str = "utf-8",
     session: Optional[aiohttp.ClientSession] = None,
-    cache_dir: str = ".cache",
+    cache_dir: str = os.getenv("CACHE_DIR") or ".cache",
     **kwargs,
 ):
     key = f"{method}:{url}"
