@@ -22,10 +22,12 @@ InternalNumber = Union[int, float, Decimal]
 
 class IType(metaclass=ABCMeta):
     @abstractmethod
-    def get_name(self) -> str: ...
+    def get_name(self) -> str:
+        ...
 
     @abstractmethod
-    def can_accept(self, other: "IType") -> bool: ...
+    def can_accept(self, other: "IType") -> bool:
+        ...
 
     def __str__(self) -> str:
         return self.get_name()

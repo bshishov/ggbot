@@ -108,7 +108,9 @@ def generate_id() -> str:
 
 
 def cached(
-    source: Source, cache_dir: str = ".cache", lifetime_seconds: float = 24 * 60 * 60
+    source: Source,
+    cache_dir: str = os.getenv("CACHE_DIR") or ".cache",
+    lifetime_seconds: float = 24 * 60 * 60,
 ):
     filename = hashlib.md5(source.get_uri().encode()).hexdigest()[:8]
     cache_path = pathlib.Path(cache_dir, f"{filename}.dat")

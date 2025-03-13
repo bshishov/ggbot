@@ -7,4 +7,5 @@ __all__ = ["BotComponent"]
 
 class BotComponent(metaclass=ABCMeta):
     @abstractmethod
-    async def init(self, context: BotContext): ...
+    async def init(self, context: BotContext):
+        ...

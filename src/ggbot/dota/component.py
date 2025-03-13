@@ -109,9 +109,9 @@ class Dota(BotComponent):
 
     async def init(self, context: BotContext):
         context.template_env.filters["dota_hero_id_to_name"] = self.hero_id_to_name
-        context.template_env.filters["dota_hero_id_to_localized_name"] = (
-            self.hero_id_to_localized_name
-        )
+        context.template_env.filters[
+            "dota_hero_id_to_localized_name"
+        ] = self.hero_id_to_localized_name
         context.template_env.filters["dota_skill_id_to_name"] = skill_id_to_name
         context.template_env.filters["dota_slot_is_radiant"] = player_slot_is_radiant
         context.template_env.filters["dota_slot_is_dire"] = player_slot_is_dire

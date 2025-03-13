@@ -37,15 +37,18 @@ EMOJI_RE = re.compile(r":[^:\s]+:")
 
 class IExpression(Generic[T]):
     @abstractmethod
-    def evaluate(self, context: "Context") -> T: ...
+    def evaluate(self, context: "Context") -> T:
+        ...
 
     @abstractmethod
-    def get_return_type(self) -> types.IType: ...
+    def get_return_type(self) -> types.IType:
+        ...
 
 
 class IVariable(IExpression[T], metaclass=ABCMeta):
     @abstractmethod
-    def get_name(self) -> str: ...
+    def get_name(self) -> str:
+        ...
 
 
 @dataclass
